@@ -687,7 +687,7 @@ export default function Home() {
           </section>
         )}
         {view === "portfolio" && <WallOfPortfolios stats={stats} />}{" "}
-        {view === "resume" && <Resume projects={projects} />}{" "}
+        {view === "resume" && <Resume />}{" "}
         {view === "settings" && (
           <SettingsView
             privacy={privacy}
@@ -978,62 +978,25 @@ function WallOfPortfolios({ stats }: { stats: Stats }) {
     </div>
   );
 }
-function Resume({ projects }: { projects: Project[] }) {
-  return (
-    <section>
-      <div className="print-actions">
-        <button className="primary" onClick={() => window.print()}>
-          <Download size={16} />
-          Print / save PDF
-        </button>
-      </div>
-      <article className="resume">
-        <header>
-          <h2>Adarsh Khare</h2>
-          <p>Full Stack Developer · Prayagraj, India</p>
-          <p>adarshkhare269@gmail.com · github.com/Adarsh-khare1</p>
-        </header>
-        <section>
-          <h3>Education</h3>
-          <p>
-            <b>Motilal Nehru National Institute of Technology Allahabad</b>
-            <span>
-              B.Tech, Electronics and Communication Engineering · 2024–2028 ·
-              CGPA 7.65
-            </span>
-          </p>
-        </section>
-        <section>
-          <h3>Projects</h3>
-          {projects.map((p) => (
-            <div className="resume-project" key={p.id}>
-              <b>{p.name}</b>
-              <span>{p.stack}</span>
-              <p>{p.summary}</p>
-              {p.changelog.slice(0, 2).map((c) => (
-                <small key={c}>• {c}</small>
-              ))}
-            </div>
-          ))}
-        </section>
-        <section>
-          <h3>Technical skills</h3>
-          <p>
-            JavaScript, TypeScript, C++, Python, React, Next.js, Node.js,
-            Express, Tailwind CSS, PostgreSQL, MongoDB, Docker, Git, GitHub,
-            Socket.io, Supabase
-          </p>
-        </section>
-        <section>
-          <h3>Achievements</h3>
-          <p>
-            Codeforces Specialist (1437). First place, Hand Gesture Robot
-            Competition — Avishkar 2025.
-          </p>
-        </section>
-      </article>
-    </section>
-  );
+function Resume() {
+  return <section className="resume-wrap"><div className="print-actions"><button className="primary" onClick={() => window.print()}><Download size={16}/>Print / save PDF</button></div><article className="resume">
+    <header className="resume-banner"><div className="resume-monogram">AK</div><div><h2>Adarsh Khare</h2><p>Full Stack Developer</p></div></header>
+    <div className="resume-body"><aside className="resume-side">
+      <section><h3>Contact details</h3><a href="mailto:adarshkhare269@gmail.com">adarshkhare269@gmail.com</a><a href="https://github.com/Adarsh-khare1" target="_blank" rel="noreferrer">github.com/Adarsh-khare1</a><p>Prayagraj, India</p></section>
+      <section><h3>Education</h3><div className="resume-rail"><b>B.Tech, Electronics &amp; Communication Engineering</b><span>Motilal Nehru National Institute of Technology Allahabad</span><span>2024 – 2028 · CGPA 7.65</span></div></section>
+      <section><h3>Core skills</h3><ul className="resume-skills"><li>Problem solving &amp; DSA</li><li>Full stack web development</li><li>REST APIs &amp; authentication</li><li>Database design</li><li>Git &amp; collaborative development</li></ul></section>
+      <section><h3>Platforms</h3><p>Codeforces · Specialist</p><p>LeetCode · Algorithm practice</p><p>GitHub · Open source projects</p></section>
+    </aside><div className="resume-main">
+      <section><h3>Summary</h3><p className="resume-summary">Full stack developer focused on building reliable web products from polished React interfaces to secure Node.js services and databases. I enjoy solving practical problems, learning by shipping, and turning complex requirements into clear user experiences.</p></section>
+      <section><h3>Selected projects</h3>
+        <div className="resume-project"><b>CypherVault</b><span>React · Node.js · PostgreSQL · Socket.io · RS256</span><p>Secure multi-tenant identity and access-control platform with rotating QR passes, duress alarms, and an audit-ledger validator.</p><ul><li>Built zero-trust verification flows and an SHA-256 audit hash chain.</li><li>Optimized QR scan validation latency for responsive security checks.</li></ul></div>
+        <div className="resume-project"><b>Code Monk</b><span>Next.js · TypeScript · MongoDB · Judge0 · Docker</span><p>Competitive-programming platform with secure multi-language execution, hidden tests, AI reviews, daily challenges, and leaderboards.</p><ul><li>Designed the problem-solving workflow, challenge rotation, and submission heatmap.</li><li>Integrated AI-assisted code review and isolated code execution.</li></ul></div>
+        <div className="resume-project"><b>Bits N Bites</b><span>React · Node.js · MongoDB · Tailwind CSS · JWT</span><p>Restaurant ordering and management PWA with separate customer and admin dashboards.</p><ul><li>Implemented order workflows, role-based access, kitchen notifications, and menu CRUD.</li></ul></div>
+      </section>
+      <section><h3>Technologies</h3><div className="resume-tech"><div><b>Languages</b><span>JavaScript, TypeScript, C++, Python, SQL</span></div><div><b>Frontend</b><span>React, Next.js, Tailwind CSS, HTML, CSS</span></div><div><b>Backend</b><span>Node.js, Express, REST APIs, JWT, Socket.io</span></div><div><b>Data &amp; tools</b><span>PostgreSQL, MongoDB, Supabase, Docker, Git, GitHub</span></div></div></section>
+      <section><h3>Achievements</h3><p className="resume-summary"><b>Codeforces Specialist</b> · First place, Hand Gesture Robot Competition at Avishkar 2025 · Featured in Amar Ujala.</p></section>
+    </div></div>
+  </article></section>;
 }
 function SettingsView({
   privacy,
