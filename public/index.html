@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Codefolio</title>
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #080c17;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .logo-badge {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #9f7aea, #5e42b8);
+      border-radius: 16px;
+      font-weight: 900;
+      font-size: 20px;
+      color: #120c24;
+      margin-bottom: 18px;
+      box-shadow: 0 0 24px rgba(159, 122, 234, 0.4);
+    }
+    .loader {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(159, 122, 234, 0.2);
+      border-top-color: #9f7aea;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h1 {
+      margin-top: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-badge">AK</div>
+  <div class="loader"></div>
+  <h1>Loading Codefolio...</h1>
+  <script>
+    if (window.location.pathname !== '/') {
+      window.location.replace('/');
+    }
+  </script>
+</body>
+</html>

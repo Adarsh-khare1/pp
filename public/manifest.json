@@ -34,22 +34,5 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
-  ],
-  "shortcuts": [
-    {
-      "name": "Coding Dashboard",
-      "url": "/?view=journal",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Focus Studio",
-      "url": "/?view=overview",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Projects Kanban",
-      "url": "/?view=projects",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    }
   ]
 }

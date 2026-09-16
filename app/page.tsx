@@ -97,6 +97,10 @@ type LeetCodeDaily = {
   date: string;
   tags: string[];
 };
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
 type Stats = {
   github: number;
   repos: number;
@@ -278,7 +282,30 @@ export default function Home() {
       kind: "build" as "build" | "break",
     }),
     [reminderForm, setReminderForm] = useState({ title: "", remindAt: "" }),
-    [projectForm, setProjectForm] = useState({ name: "", summary: "" });
+    [projectForm, setProjectForm] = useState({ name: "", summary: "" }),
+    [installPrompt, setInstallPrompt] =
+      useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    try {
+      installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      if (choice?.outcome === "accepted") {
+        setInstallPrompt(null);
+        notify("Codefolio App installed to device!");
+      }
+    } catch {}
+  };
 
   const applyTheme = (theme: "purple" | "lime" | "cyan" | "amber") => {
     setAccentTheme(theme);
@@ -623,6 +650,50 @@ export default function Home() {
   const title = nav.find((n) => n.id === view)?.label || "Overview";
   return (
     <main className="shell">
+      {/* Mobile Top Header (visible on mobile <768px) */}
+      <header className="mobile-top-bar">
+        <div className="mobile-brand" onClick={() => setView("overview")}>
+          <span className="mobile-avatar">AK</span>
+          <div className="mobile-brand-meta">
+            <b>Codefolio</b>
+            <span className="mobile-status-dot">
+              <span className="pulse-dot"></span> Live
+            </span>
+          </div>
+        </div>
+        <div className="mobile-top-actions">
+          <div className="mobile-theme-dots">
+            {(["purple", "lime", "cyan", "amber"] as const).map((t) => (
+              <button
+                key={t}
+                className={`mobile-theme-dot theme-${t} ${accentTheme === t ? "active" : ""}`}
+                onClick={() => applyTheme(t)}
+                title={`Switch to ${t} theme`}
+                aria-label={`${t} theme`}
+              />
+            ))}
+          </div>
+          <button
+            className="mobile-qr-btn"
+            onClick={() => setShowQrModal(true)}
+            title="Scan QR Code"
+            aria-label="Scan QR Code"
+          >
+            <QrCode size={16} />
+          </button>
+          {installPrompt && (
+            <button
+              className="mobile-install-btn"
+              onClick={handleInstallClick}
+              title="Install Android App"
+            >
+              <Download size={14} />
+              <span>Install</span>
+            </button>
+          )}
+        </div>
+      </header>
+
       <aside className="side">
         <div className="brand">
           <span>AK</span>
@@ -1426,6 +1497,9 @@ export default function Home() {
             accentTheme={accentTheme}
             applyTheme={applyTheme}
             onOpenQrModal={() => setShowQrModal(true)}
+            setView={setView}
+            installPrompt={installPrompt}
+            onInstallClick={handleInstallClick}
           />
         )}
         <JarvisAssistant
@@ -1446,6 +1520,37 @@ export default function Home() {
           onClose={() => setShowQrModal(false)}
         />
       </section>
+
+      {/* Mobile Bottom Navigation Bar (visible on mobile <768px) */}
+      <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">
+        {[
+          { id: "overview", label: "Home", icon: LayoutDashboard },
+          { id: "journal", label: "Coding", icon: BookOpen },
+          { id: "projects", label: "Projects", icon: BriefcaseBusiness },
+          { id: "goals", label: "Goals", icon: Target },
+          { id: "settings", label: "More", icon: Settings },
+        ].map((item) => {
+          const Icon = item.icon;
+          const isActive = view === item.id;
+          return (
+            <button
+              key={item.id}
+              className={`mobile-nav-item ${isActive ? "active" : ""}`}
+              onClick={() => {
+                setView(item.id);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              aria-label={item.label}
+            >
+              <div className="mobile-nav-icon-wrapper">
+                <Icon size={20} />
+                {isActive && <span className="mobile-nav-indicator" />}
+              </div>
+              <span className="mobile-nav-label">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
     </main>
   );
 }
@@ -1907,6 +2012,9 @@ function SettingsView({
   accentTheme,
   applyTheme,
   onOpenQrModal,
+  setView,
+  installPrompt,
+  onInstallClick,
 }: {
   privacy: boolean;
   setPrivacy: React.Dispatch<React.SetStateAction<boolean>>;
@@ -1920,6 +2028,9 @@ function SettingsView({
   accentTheme: "purple" | "lime" | "cyan" | "amber";
   applyTheme: (theme: "purple" | "lime" | "cyan" | "amber") => void;
   onOpenQrModal: () => void;
+  setView?: (v: string) => void;
+  installPrompt?: BeforeInstallPromptEvent | null;
+  onInstallClick?: () => void;
 }) {
   const themes = [
     { id: "purple", label: "Cyber Purple", hex: "#9f7aea", desc: "Default cybernetic neon" },
@@ -1931,6 +2042,51 @@ function SettingsView({
   return (
     <section className="stack settings-stack">
       <div className="split">
+        <Panel title="Mobile & Web Views" eyebrow="NAVIGATION">
+          <p className="dashboard-note" style={{ marginTop: 0 }}>
+            Quickly jump to public recruiter pages or install Codefolio directly to your Android device.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "12px" }}>
+            {setView && (
+              <>
+                <button
+                  className="secondary"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                  onClick={() => setView("portfolio")}
+                >
+                  <Globe2 size={16} />
+                  <span>Public Portfolio</span>
+                </button>
+                <button
+                  className="secondary"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                  onClick={() => setView("resume")}
+                >
+                  <FileText size={16} />
+                  <span>Interactive Resume</span>
+                </button>
+              </>
+            )}
+            <button
+              className="secondary"
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+              onClick={onOpenQrModal}
+            >
+              <QrCode size={16} />
+              <span>Share QR Code</span>
+            </button>
+            {onInstallClick && installPrompt && (
+              <button
+                className="action-btn"
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "linear-gradient(135deg, var(--purple), #7c3aed)" }}
+                onClick={onInstallClick}
+              >
+                <Download size={16} />
+                <span>Install Android App</span>
+              </button>
+            )}
+          </div>
+        </Panel>
         <Panel title="Workspace Accent Theme" eyebrow="APPEARANCE">
           <p className="dashboard-note" style={{ marginTop: 0 }}>
             Choose your command center accent color. Changes persist instantly across sessions.
