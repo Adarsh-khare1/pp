@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import PortfolioAdmin from "@/components/PortfolioAdmin";
+import { defaultPortfolioConfig, PortfolioConfig, readPortfolioConfig } from "@/lib/portfolio-config";
 import {
   Activity,
   BookOpen,
@@ -125,6 +127,7 @@ export default function Home() {
     [projects, setProjects] = useState<Project[]>([]),
     [goals, setGoals] = useState<Goal[]>(goalsSeed),
     [habits, setHabits] = useState<Habit[]>(habitsSeed),
+    [portfolioConfig, setPortfolioConfig] = useState<PortfolioConfig>(defaultPortfolioConfig),
     [command, setCommand] = useState(""),
     [query, setQuery] = useState(""),
     [privacy, setPrivacy] = useState(true),
@@ -158,6 +161,10 @@ export default function Home() {
     setSourceErrors(data.errors || []);
     setUpdatedAt(data.updatedAt);
   };
+  useEffect(() => {
+    const timer = window.setTimeout(() => setPortfolioConfig(readPortfolioConfig()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   useEffect(() => {
     let active = true;
     const timer = window.setTimeout(async () => {
@@ -514,7 +521,7 @@ export default function Home() {
           </section>
         )}
         {view === "portfolio" && <WallOfPortfolios stats={stats} />}{" "}
-        {view === "resume" && <Resume />}{" "}
+        {view === "resume" && <Resume config={portfolioConfig} />}{" "}
         {view === "settings" && (
           <SettingsView
             privacy={privacy}
@@ -523,6 +530,9 @@ export default function Home() {
             stats={stats}
             errors={sourceErrors}
             updatedAt={updatedAt}
+            config={portfolioConfig}
+            setConfig={setPortfolioConfig}
+            notify={notify}
           />
         )}
         <div className="command">
@@ -798,20 +808,18 @@ function WallOfPortfolios({ stats }: { stats: Stats }) {
     </div>
   );
 }
-function Resume() {
+function Resume({ config }: { config: PortfolioConfig }) {
   return <section className="resume-wrap"><div className="print-actions"><button className="primary" onClick={() => window.print()}><Download size={16}/>Print / save PDF</button></div><article className="resume">
-    <header className="resume-banner"><div className="resume-monogram">AK</div><div><h2>Adarsh Khare</h2><p>Full Stack Developer</p></div></header>
+    <header className="resume-banner"><div className="resume-monogram">AK</div><div><h2>{config.name}</h2><p>{config.role}</p></div></header>
     <div className="resume-body"><aside className="resume-side">
-      <section><h3>Contact details</h3><a href="mailto:adarshkhare269@gmail.com">adarshkhare269@gmail.com</a><a href="https://github.com/Adarsh-khare1" target="_blank" rel="noreferrer">github.com/Adarsh-khare1</a><p>Prayagraj, India</p></section>
+      <section><h3>Contact details</h3><a href={`mailto:${config.email}`}>{config.email}</a><a href={config.githubUrl} target="_blank" rel="noreferrer">{config.githubUrl.replace(/^https?:\/\//,"")}</a><p>{config.location}</p></section>
       <section><h3>Education</h3><div className="resume-rail"><b>B.Tech, Electronics &amp; Communication Engineering</b><span>Motilal Nehru National Institute of Technology Allahabad</span><span>2024 – 2028 · CGPA 7.65</span></div></section>
       <section><h3>Core skills</h3><ul className="resume-skills"><li>Problem solving &amp; DSA</li><li>Full stack web development</li><li>REST APIs &amp; authentication</li><li>Database design</li><li>Git &amp; collaborative development</li></ul></section>
       <section><h3>Platforms</h3><p>Codeforces · Specialist</p><p>LeetCode · Algorithm practice</p><p>GitHub · Open source projects</p></section>
     </aside><div className="resume-main">
-      <section><h3>Summary</h3><p className="resume-summary">Full stack developer focused on building reliable web products from polished React interfaces to secure Node.js services and databases. I enjoy solving practical problems, learning by shipping, and turning complex requirements into clear user experiences.</p></section>
+      <section><h3>Summary</h3><p className="resume-summary">{config.intro}</p></section>
       <section><h3>Selected projects</h3>
-        <div className="resume-project"><b>CypherVault</b><span>React · Node.js · PostgreSQL · Socket.io · RS256</span><p>Secure multi-tenant identity and access-control platform with rotating QR passes, duress alarms, and an audit-ledger validator.</p><ul><li>Built zero-trust verification flows and an SHA-256 audit hash chain.</li><li>Optimized QR scan validation latency for responsive security checks.</li></ul></div>
-        <div className="resume-project"><b>Code Monk</b><span>Next.js · TypeScript · MongoDB · Judge0 · Docker</span><p>Competitive-programming platform with secure multi-language execution, hidden tests, AI reviews, daily challenges, and leaderboards.</p><ul><li>Designed the problem-solving workflow, challenge rotation, and submission heatmap.</li><li>Integrated AI-assisted code review and isolated code execution.</li></ul></div>
-        <div className="resume-project"><b>Bits N Bites</b><span>React · Node.js · MongoDB · Tailwind CSS · JWT</span><p>Restaurant ordering and management PWA with separate customer and admin dashboards.</p><ul><li>Implemented order workflows, role-based access, kitchen notifications, and menu CRUD.</li></ul></div>
+        {config.projects.map((project)=><div className="resume-project" key={project.id}><b>{project.name}</b><span>{project.stack}</span><p>{project.summary}</p></div>)}
       </section>
       <section><h3>Technologies</h3><div className="resume-tech"><div><b>Languages</b><span>JavaScript, TypeScript, C++, Python, SQL</span></div><div><b>Frontend</b><span>React, Next.js, Tailwind CSS, HTML, CSS</span></div><div><b>Backend</b><span>Node.js, Express, REST APIs, JWT, Socket.io</span></div><div><b>Data &amp; tools</b><span>PostgreSQL, MongoDB, Supabase, Docker, Git, GitHub</span></div></div></section>
       <section><h3>Achievements</h3><p className="resume-summary"><b>Codeforces Specialist</b> · First place, Hand Gesture Robot Competition at Avishkar 2025 · Featured in Amar Ujala.</p></section>
@@ -825,6 +833,9 @@ function SettingsView({
   stats,
   errors,
   updatedAt,
+  config,
+  setConfig,
+  notify,
 }: {
   privacy: boolean;
   setPrivacy: React.Dispatch<React.SetStateAction<boolean>>;
@@ -832,9 +843,12 @@ function SettingsView({
   stats: Stats;
   errors: string[];
   updatedAt: string;
+  config: PortfolioConfig;
+  setConfig: React.Dispatch<React.SetStateAction<PortfolioConfig>>;
+  notify: (message: string) => void;
 }) {
   return (
-    <section className="split">
+    <section className="stack settings-stack"><div className="split">
       <Panel title="Profile connections" eyebrow="LIVE DATA">
         <div className="connection">
           <b>LeetCode</b>
@@ -890,7 +904,7 @@ function SettingsView({
             data is fetched live.
           </p>
         </div>
-      </Panel>
+      </Panel></div><PortfolioAdmin config={config} setConfig={setConfig} notify={notify}/>
     </section>
   );
 }
