@@ -686,9 +686,7 @@ export default function Home() {
             </Panel>
           </section>
         )}
-        {view === "portfolio" && (
-          <Portfolio projects={projects.filter((p) => p.public)} />
-        )}{" "}
+        {view === "portfolio" && <WallOfPortfolios stats={stats} />}{" "}
         {view === "resume" && <Resume projects={projects} />}{" "}
         {view === "settings" && (
           <SettingsView
@@ -938,53 +936,46 @@ function Metric({
     </article>
   );
 }
-function Portfolio({ projects }: { projects: Project[] }) {
+function WallOfPortfolios({ stats }: { stats: Stats }) {
   return (
-    <section className="public-page">
-      <div className="portfolio-hero">
-        <p>ADARSH KHARE</p>
-        <h2>
-          Full Stack Developer building reliable products from interface to
-          infrastructure.
-        </h2>
-        <div>
-          <a href="mailto:adarshkhare269@gmail.com">Email me</a>
-          <a href="https://github.com/Adarsh-khare1" target="_blank">
-            GitHub <ExternalLink size={14} />
+    <div className="wop-container">
+      <div className="wop-sidebar">
+        <div className="wop-profile">
+          <div className="wop-avatar">AK</div>
+          <div className="wop-status">Open to Work</div>
+          <h2>Adarsh Khare</h2>
+          <p className="wop-title">Full Stack Developer</p>
+          <p className="wop-location">📍 India</p>
+        </div>
+        <div className="wop-exp">
+          <small>
+            {stats.repos} Repositories · {stats.cfSolved + stats.leetcode}{" "}
+            Solves
+          </small>
+          <div className="wop-logos">
+            <span className="wop-logo github">GitHub</span>
+            <span className="wop-logo codeforces">Codeforces</span>
+            <span className="wop-logo leetcode">LeetCode</span>
+          </div>
+        </div>
+        <div className="wop-actions">
+          <a href="mailto:adarshkhare269@gmail.com" className="wop-message">
+            Message
           </a>
+          <button className="wop-bookmark">Bookmark</button>
+        </div>
+        <div className="wop-tabs">
+          <div className="wop-tab active">Portfolio</div>
         </div>
       </div>
-      <h3>Selected work</h3>
-      <div className="cards">
-        {projects.map((p) => (
-          <article className="project public" key={p.id}>
-            <span className="pill done">Featured</span>
-            <h3>{p.name}</h3>
-            <p>{p.summary}</p>
-            <div className="tags">
-              {p.stack.split(",").map((s) => (
-                <span key={s}>{s.trim()}</span>
-              ))}
-            </div>
-          </article>
-        ))}
+      <div className="wop-content">
+        <iframe
+          src="/portfolio"
+          title="Adarsh Khare Portfolio"
+          className="wop-iframe"
+        ></iframe>
       </div>
-      <div className="timeline">
-        <h3>Highlights</h3>
-        <p>
-          <b>2026</b> Built three full-stack products across security,
-          competitive programming, and restaurant operations.
-        </p>
-        <p>
-          <b>2025</b> Won the Hand Gesture Robot Competition at Avishkar;
-          featured in Amar Ujala.
-        </p>
-        <p>
-          <b>2024–2028</b> B.Tech, Electronics and Communication Engineering,
-          MNNIT Allahabad.
-        </p>
-      </div>
-    </section>
+    </div>
   );
 }
 function Resume({ projects }: { projects: Project[] }) {
