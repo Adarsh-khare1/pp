@@ -12,7 +12,6 @@ import {
   Globe2,
   LayoutDashboard,
   Plus,
-  RefreshCw,
   Search,
   Settings,
   ShieldCheck,
@@ -48,6 +47,7 @@ type Project = {
   source?: string;
 };
 type Goal = { id: number; title: string; target: number; done: number };
+type Habit = { id: number; title: string; kind: "build" | "break"; streak: number; doneToday: boolean };
 type Stats = {
   github: number;
   repos: number;
@@ -96,11 +96,16 @@ const goalsSeed: Goal[] = [
   { id: 2, title: "Reach Codeforces Expert", target: 1600, done: 1437 },
   { id: 3, title: "Ship one project", target: 1, done: 1 },
 ];
+const habitsSeed: Habit[] = [
+  { id: 1, title: "Code with full focus", kind: "build", streak: 4, doneToday: false },
+  { id: 2, title: "Exercise for 30 minutes", kind: "build", streak: 2, doneToday: false },
+  { id: 3, title: "Avoid mindless scrolling", kind: "break", streak: 3, doneToday: false },
+];
 const nav = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "journal", label: "Problem journal", icon: BookOpen },
+  { id: "journal", label: "Coding dashboard", icon: BookOpen },
   { id: "projects", label: "Projects", icon: BriefcaseBusiness },
-  { id: "goals", label: "Goals & contests", icon: Target },
+  { id: "goals", label: "Goals & habits", icon: Target },
   { id: "portfolio", label: "Portfolio", icon: Globe2 },
   { id: "resume", label: "Resume", icon: FileText },
   { id: "settings", label: "Settings", icon: Settings },
@@ -119,21 +124,16 @@ export default function Home() {
     [problems, setProblems] = useState<Problem[]>([]),
     [projects, setProjects] = useState<Project[]>([]),
     [goals, setGoals] = useState<Goal[]>(goalsSeed),
+    [habits, setHabits] = useState<Habit[]>(habitsSeed),
     [command, setCommand] = useState(""),
     [query, setQuery] = useState(""),
     [privacy, setPrivacy] = useState(true),
     [toast, setToast] = useState(""),
-    [syncing, setSyncing] = useState(false),
     [stats, setStats] = useState<Stats>(emptyStats),
     [sourceErrors, setSourceErrors] = useState<string[]>([]),
     [updatedAt, setUpdatedAt] = useState(""),
-    [problemForm, setProblemForm] = useState({
-      title: "",
-      platform: "LeetCode",
-      topic: "Arrays",
-      difficulty: "Medium",
-      notes: "",
-    }),
+    [goalForm, setGoalForm] = useState({ title: "", target: "" }),
+    [habitForm, setHabitForm] = useState({ title: "", kind: "build" as "build" | "break" }),
     [projectForm, setProjectForm] = useState({ name: "", summary: "" });
   const applyLive = (
     data: LiveProfile,
@@ -164,6 +164,7 @@ export default function Home() {
       let manualProblems: Problem[] = [];
       let manualProjects: Project[] = [];
       let savedGoals = goalsSeed;
+      let savedHabits = habitsSeed;
       try {
         const saved = localStorage.getItem("codefolio-manual-v3");
         if (saved) {
@@ -175,6 +176,7 @@ export default function Home() {
             (p: Project) => p.source === "Manual",
           );
           savedGoals = x.goals || goalsSeed;
+          savedHabits = x.habits || habitsSeed;
         }
       } catch {}
       try {
@@ -195,6 +197,7 @@ export default function Home() {
         }
       }
       if (active) setGoals(savedGoals);
+      if (active) setHabits(savedHabits);
     }, 0);
     return () => {
       active = false;
@@ -209,49 +212,17 @@ export default function Home() {
         problems: problems.filter((p) => p.source === "Manual"),
         projects: projects.filter((p) => p.source === "Manual"),
         goals,
+        habits,
       }),
     );
-  }, [problems, projects, goals]);
+  }, [problems, projects, goals, habits]);
   const notify = (s: string) => {
     setToast(s);
     setTimeout(() => setToast(""), 2600);
   };
-  const sync = async () => {
-    setSyncing(true);
-    try {
-      const response = await fetch(`/api/profile?t=${Date.now()}`, {
-        cache: "no-store",
-      });
-      if (!response.ok)
-        throw new Error(`Profile service returned ${response.status}`);
-      const data = (await response.json()) as LiveProfile;
-      applyLive(data);
-      notify(
-        data.errors?.length
-          ? `Updated with ${data.errors.length} platform warning${data.errors.length === 1 ? "" : "s"}`
-          : "All live profiles refreshed",
-      );
-    } catch {
-      notify("Live sync unavailable — keeping current values");
-    } finally {
-      setSyncing(false);
-    }
-  };
-  const addProblem = () => {
-    if (!problemForm.title.trim()) return;
-    setProblems((p) => [
-      {
-        id: `manual-${Date.now()}`,
-        date: new Date().toISOString().slice(0, 10),
-        revise: false,
-        source: "Manual",
-        ...problemForm,
-      },
-      ...p,
-    ]);
-    setProblemForm({ ...problemForm, title: "", notes: "" });
-    notify("Problem added to journal");
-  };
+  const addGoal = () => { const target = Number(goalForm.target); if (!goalForm.title.trim() || !target) return; setGoals((items) => [...items, { id: Date.now(), title: goalForm.title.trim(), target, done: 0 }]); setGoalForm({ title: "", target: "" }); notify("Goal added"); };
+  const addHabit = () => { if (!habitForm.title.trim()) return; setHabits((items) => [...items, { id: Date.now(), title: habitForm.title.trim(), kind: habitForm.kind, streak: 0, doneToday: false }]); setHabitForm({ ...habitForm, title: "" }); notify(habitForm.kind === "build" ? "Habit added" : "Bad-habit tracker added"); };
+  const toggleHabit = (id: number) => setHabits((items) => items.map((habit) => habit.id === id ? { ...habit, doneToday: !habit.doneToday, streak: habit.doneToday ? Math.max(0, habit.streak - 1) : habit.streak + 1 } : habit));
   const addProject = () => {
     if (!projectForm.name.trim()) return;
     setProjects((p) => [
@@ -292,6 +263,7 @@ export default function Home() {
             problems,
             projects,
             goals,
+            habits,
           },
           null,
           2,
@@ -358,16 +330,7 @@ export default function Home() {
             <p className="kicker">PERSONAL DEVELOPER WORKSPACE</p>
             <h1>{title}</h1>
           </div>
-          <div className="header-actions">
-            <button className="secondary" onClick={sync}>
-              <RefreshCw size={16} className={syncing ? "spin" : ""} />
-              {syncing ? "Syncing" : "Sync profiles"}
-            </button>
-            <button className="primary" onClick={() => setView("journal")}>
-              <Plus size={16} />
-              Add work
-            </button>
-          </div>
+          <div className="live-source"><span/>Live data updates automatically</div>
         </header>
         {toast && <div className="toast">{toast}</div>}
         {view === "overview" && (
@@ -382,95 +345,12 @@ export default function Home() {
         )}{" "}
         {view === "journal" && (
           <section className="stack">
-            <div className="split">
-              <Panel title="Log a solved problem" eyebrow="CODING JOURNAL">
-                <div className="form-grid">
-                  <input
-                    placeholder="Problem title"
-                    value={problemForm.title}
-                    onChange={(e) =>
-                      setProblemForm({ ...problemForm, title: e.target.value })
-                    }
-                  />
-                  <select
-                    value={problemForm.platform}
-                    onChange={(e) =>
-                      setProblemForm({
-                        ...problemForm,
-                        platform: e.target.value,
-                      })
-                    }
-                  >
-                    <option>LeetCode</option>
-                    <option>Codeforces</option>
-                    <option>Other</option>
-                  </select>
-                  <select
-                    value={problemForm.topic}
-                    onChange={(e) =>
-                      setProblemForm({ ...problemForm, topic: e.target.value })
-                    }
-                  >
-                    {topics.map((t) => (
-                      <option key={t}>{t}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={problemForm.difficulty}
-                    onChange={(e) =>
-                      setProblemForm({
-                        ...problemForm,
-                        difficulty: e.target.value,
-                      })
-                    }
-                  >
-                    <option>Easy</option>
-                    <option>Medium</option>
-                    <option>Hard</option>
-                  </select>
-                  <textarea
-                    className="wide"
-                    placeholder="Approach, mistakes, complexity…"
-                    value={problemForm.notes}
-                    onChange={(e) =>
-                      setProblemForm({ ...problemForm, notes: e.target.value })
-                    }
-                  />
-                  <button className="primary wide" onClick={addProblem}>
-                    Save problem
-                  </button>
-                </div>
-              </Panel>
-              <Panel title="Revision queue" eyebrow="SMART REVIEW">
-                <div className="queue">
-                  <b>
-                    {problems.filter((p) => p.revise).length} topics waiting
-                  </b>
-                  <p>
-                    Review weak problems, then clear them when the approach
-                    feels natural.
-                  </p>
-                  {problems
-                    .filter((p) => p.revise)
-                    .slice(0, 3)
-                    .map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() =>
-                          setProblems((x) =>
-                            x.map((q) =>
-                              q.id === p.id ? { ...q, revise: false } : q,
-                            ),
-                          )
-                        }
-                      >
-                        {p.title}
-                        <span>Mark reviewed</span>
-                      </button>
-                    ))}
-                </div>
-              </Panel>
+            <div className="coding-stats">
+              <article><span>LeetCode</span><b>{stats.leetcode}</b><small>Total solved</small><div className="difficulty-line"><i style={{width:`${stats.leetcode ? stats.leetcodeEasy / stats.leetcode * 100 : 0}%`}}/><i style={{width:`${stats.leetcode ? stats.leetcodeMedium / stats.leetcode * 100 : 0}%`}}/><i style={{width:`${stats.leetcode ? stats.leetcodeHard / stats.leetcode * 100 : 0}%`}}/></div></article>
+              <article><span>Codeforces</span><b>{stats.cf || "—"}</b><small className="capitalize">{stats.rank} · max {stats.cfMax || "—"}</small><strong>{stats.cfSolved} recent unique solves</strong></article>
+              <article><span>Activity feed</span><b>{problems.length}</b><small>Recent accepted submissions</small><strong>{new Set(problems.map((p)=>p.topic)).size} topics represented</strong></article>
             </div>
+            <div className="coding-breakdown"><Panel title="LeetCode difficulty" eyebrow="PROBLEM MIX"><div className="difficulty-row easy"><span>Easy</span><b>{stats.leetcodeEasy}</b><i><em style={{width:`${stats.leetcode ? stats.leetcodeEasy / stats.leetcode * 100 : 0}%`}}/></i></div><div className="difficulty-row medium"><span>Medium</span><b>{stats.leetcodeMedium}</b><i><em style={{width:`${stats.leetcode ? stats.leetcodeMedium / stats.leetcode * 100 : 0}%`}}/></i></div><div className="difficulty-row hard"><span>Hard</span><b>{stats.leetcodeHard}</b><i><em style={{width:`${stats.leetcode ? stats.leetcodeHard / stats.leetcode * 100 : 0}%`}}/></i></div></Panel><Panel title="Platform pulse" eyebrow="LIVE RATINGS"><div className="rating-pulse"><Trophy size={26}/><div><b>{stats.cf || "—"}</b><span className="capitalize">Codeforces {stats.rank}</span></div></div><p className="dashboard-note">Submissions are fetched automatically from your connected public profiles. No manual logging needed.</p></Panel></div>
             <Panel
               title="Latest accepted submissions"
               eyebrow="LIVE PROBLEM JOURNAL"
@@ -627,63 +507,10 @@ export default function Home() {
           </section>
         )}
         {view === "goals" && (
-          <section className="split">
-            <Panel title="Weekly goals" eyebrow="DIRECTION">
-              {goals.map((g) => (
-                <div className="goal" key={g.id}>
-                  <div className="row">
-                    <b>{g.title}</b>
-                    <span>
-                      {g.done}/{g.target}
-                    </span>
-                  </div>
-                  <div className="progress">
-                    <i
-                      style={{
-                        width: `${Math.min(100, (g.done / g.target) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                  <button
-                    onClick={() =>
-                      setGoals((x) =>
-                        x.map((q) =>
-                          q.id === g.id
-                            ? { ...q, done: Math.min(q.target, q.done + 1) }
-                            : q,
-                        ),
-                      )
-                    }
-                  >
-                    Log progress
-                  </button>
-                </div>
-              ))}
-            </Panel>
-            <Panel title="Contest tracker" eyebrow="UPCOMING & RECENT">
-              <div className="contest">
-                <CalendarDays />
-                <div>
-                  <b>Codeforces rounds</b>
-                  <p>
-                    Open your live contest calendar and record post-contest
-                    notes.
-                  </p>
-                  <a href="https://codeforces.com/contests" target="_blank">
-                    View contests <ExternalLink size={14} />
-                  </a>
-                </div>
-              </div>
-              <div className="contest">
-                <Trophy />
-                <div>
-                  <b>Current rating: {stats.cf}</b>
-                  <p className="capitalize">
-                    {stats.rank} · Target: Expert (1600)
-                  </p>
-                </div>
-              </div>
-            </Panel>
+          <section className="stack life-dashboard">
+            <div className="split"><Panel title="Editable goals" eyebrow="DIRECTION"><div className="goal-create"><input placeholder="New goal" value={goalForm.title} onChange={(e)=>setGoalForm({...goalForm,title:e.target.value})}/><input type="number" min="1" placeholder="Target" value={goalForm.target} onChange={(e)=>setGoalForm({...goalForm,target:e.target.value})}/><button className="primary" onClick={addGoal}><Plus size={15}/>Add</button></div>{goals.map((g)=><div className="goal editable-goal" key={g.id}><div className="goal-edit-row"><input aria-label="Goal name" value={g.title} onChange={(e)=>setGoals((items)=>items.map((item)=>item.id===g.id?{...item,title:e.target.value}:item))}/><input aria-label="Current progress" type="number" min="0" max={g.target} value={g.done} onChange={(e)=>setGoals((items)=>items.map((item)=>item.id===g.id?{...item,done:Math.min(item.target,Number(e.target.value))}:item))}/><span>/</span><input aria-label="Goal target" type="number" min="1" value={g.target} onChange={(e)=>setGoals((items)=>items.map((item)=>item.id===g.id?{...item,target:Math.max(1,Number(e.target.value))}:item))}/><button className="icon" aria-label={`Delete ${g.title}`} onClick={()=>setGoals((items)=>items.filter((item)=>item.id!==g.id))}><Trash2 size={15}/></button></div><div className="progress"><i style={{width:`${Math.min(100,g.done/g.target*100)}%`}}/></div></div>)}</Panel>
+            <Panel title="Today at a glance" eyebrow="CONSISTENCY"><div className="habit-summary"><div><b>{habits.filter((h)=>h.doneToday).length}/{habits.length}</b><span>check-ins today</span></div><div><b>{Math.max(0,...habits.map((h)=>h.streak))}</b><span>best streak</span></div></div><div className="contest"><CalendarDays/><div><b>Codeforces rounds</b><p>Keep competition part of the routine.</p><a href="https://codeforces.com/contests" target="_blank">View contests <ExternalLink size={14}/></a></div></div></Panel></div>
+            <Panel title="Habit & bad-habit tracker" eyebrow="DAILY SYSTEM"><div className="habit-create"><input placeholder="Habit to build or break" value={habitForm.title} onChange={(e)=>setHabitForm({...habitForm,title:e.target.value})}/><select value={habitForm.kind} onChange={(e)=>setHabitForm({...habitForm,kind:e.target.value as "build"|"break"})}><option value="build">Build a habit</option><option value="break">Break a bad habit</option></select><button className="primary" onClick={addHabit}><Plus size={15}/>Add tracker</button></div><div className="habit-grid">{habits.map((habit)=><article className={`habit-card ${habit.kind} ${habit.doneToday?"checked":""}`} key={habit.id}><div><span>{habit.kind==="build"?"BUILD":"BREAK"}</span><button className="icon" aria-label={`Delete ${habit.title}`} onClick={()=>setHabits((items)=>items.filter((item)=>item.id!==habit.id))}><Trash2 size={14}/></button></div><h3>{habit.title}</h3><p><b>{habit.streak}</b> day streak</p><button onClick={()=>toggleHabit(habit.id)}>{habit.doneToday?"✓ Checked today":habit.kind==="build"?"Mark complete":"I avoided it today"}</button></article>)}</div></Panel>
           </section>
         )}
         {view === "portfolio" && <WallOfPortfolios stats={stats} />}{" "}
@@ -693,7 +520,6 @@ export default function Home() {
             privacy={privacy}
             setPrivacy={setPrivacy}
             exportData={exportData}
-            sync={sync}
             stats={stats}
             errors={sourceErrors}
             updatedAt={updatedAt}
@@ -949,8 +775,7 @@ function WallOfPortfolios({ stats }: { stats: Stats }) {
         </div>
         <div className="wop-exp">
           <small>
-            {stats.repos} Repositories · {stats.cfSolved + stats.leetcode}{" "}
-            Solves
+            {stats.repos} Repositories · {stats.cf} Codeforces rating
           </small>
           <div className="wop-logos">
             <span className="wop-logo github">GitHub</span>
@@ -958,12 +783,7 @@ function WallOfPortfolios({ stats }: { stats: Stats }) {
             <span className="wop-logo leetcode">LeetCode</span>
           </div>
         </div>
-        <div className="wop-actions">
-          <a href="mailto:adarshkhare269@gmail.com" className="wop-message">
-            Message
-          </a>
-          <button className="wop-bookmark">Bookmark</button>
-        </div>
+        <div className="wop-actions"><a href="/portfolio#contact" target="_blank" className="wop-message">Contact Adarsh</a></div>
         <div className="wop-tabs">
           <div className="wop-tab active">Portfolio</div>
         </div>
@@ -1002,7 +822,6 @@ function SettingsView({
   privacy,
   setPrivacy,
   exportData,
-  sync,
   stats,
   errors,
   updatedAt,
@@ -1010,7 +829,6 @@ function SettingsView({
   privacy: boolean;
   setPrivacy: React.Dispatch<React.SetStateAction<boolean>>;
   exportData: () => void;
-  sync: () => Promise<void>;
   stats: Stats;
   errors: string[];
   updatedAt: string;
@@ -1047,10 +865,7 @@ function SettingsView({
             {error}
           </p>
         ))}
-        <button className="primary" onClick={sync}>
-          <RefreshCw size={16} />
-          Refresh now
-        </button>
+        <p className="sync-status">Profiles refresh automatically when the workspace opens.</p>
       </Panel>
       <Panel title="Privacy & backup" eyebrow="CONTROL">
         <label className="toggle">
