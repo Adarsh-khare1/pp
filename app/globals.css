@@ -3756,3 +3756,976 @@ body {
     display: none;
   }
 }
+
+/* ==========================================================================
+   Header Quick Actions & QR Trigger
+   ========================================================================== */
+.header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.qr-header-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(159, 122, 234, 0.12);
+  border: 1px solid rgba(159, 122, 234, 0.3);
+  color: var(--purple);
+  padding: 6px 13px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.qr-header-trigger:hover {
+  background: rgba(159, 122, 234, 0.25);
+  border-color: var(--purple);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   App - 2: LeetCode Daily Challenge Card
+   ========================================================================== */
+.daily-challenge-card {
+  background: linear-gradient(145deg, #161b2e, #101424);
+  border: 1px solid rgba(159, 122, 234, 0.28);
+  border-radius: 14px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s ease;
+}
+.daily-challenge-card:hover {
+  border-color: var(--purple);
+}
+.daily-challenge-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.daily-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.daily-pill {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  padding: 3px 9px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.daily-pill.potd {
+  background: rgba(159, 122, 234, 0.18);
+  color: var(--purple);
+  border: 1px solid rgba(159, 122, 234, 0.4);
+}
+.daily-pill.diff-easy {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.daily-pill.diff-medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.daily-pill.diff-hard {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.daily-date {
+  font-size: 12px;
+  color: var(--muted);
+}
+.daily-solve-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--purple);
+  color: #0b0f19;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.daily-solve-btn:hover {
+  opacity: 0.9;
+}
+.daily-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+.daily-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.daily-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  color: #a0aec0;
+}
+
+/* ==========================================================================
+   App - 1: Topic Mastery Radar & Domain Breakdown
+   ========================================================================== */
+.topic-mastery-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.topic-mastery-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.mastery-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(159, 122, 234, 0.12);
+  border: 1px solid rgba(159, 122, 234, 0.25);
+  color: var(--purple);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.mastery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+.mastery-card {
+  background: #151c2d;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s ease;
+}
+.mastery-card:hover {
+  border-color: rgba(159, 122, 234, 0.4);
+}
+.mastery-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.mastery-card-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mastery-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.badge-mastered {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.badge-proficient {
+  background: rgba(6, 182, 212, 0.15);
+  color: #06b6d4;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+.badge-practicing {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.mastery-count-text {
+  font-size: 11px;
+  color: var(--muted);
+}
+.mastery-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mastery-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple), var(--lime));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.mastery-diff-dots {
+  display: flex;
+  gap: 6px;
+}
+.diff-dot {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.diff-dot.easy {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+.diff-dot.medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+.diff-dot.hard {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* ==========================================================================
+   App - 1: Cross-Platform Activity Heatmap
+   ========================================================================== */
+.heatmap-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.heatmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.heatmap-stats-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.heatmap-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #171f32;
+  border: 1px solid var(--line);
+  padding: 5px 11px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #a0aec0;
+}
+.heatmap-pill.streak-pill {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+}
+.heatmap-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #111624;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+.heatmap-day-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 94px;
+  font-size: 10px;
+  color: var(--muted);
+  padding-right: 4px;
+}
+.heatmap-scroll-area {
+  overflow-x: auto;
+}
+.heatmap-matrix {
+  display: flex;
+  gap: 4px;
+}
+.heatmap-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.heatmap-cell {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.heatmap-cell:hover {
+  transform: scale(1.3);
+  z-index: 10;
+}
+.heatmap-cell.level-0 {
+  background: rgba(255, 255, 255, 0.05);
+}
+.heatmap-cell.level-1 {
+  background: #3b2a68;
+}
+.heatmap-cell.level-2 {
+  background: #6d44ba;
+}
+.heatmap-cell.level-3 {
+  background: #9f7aea;
+  box-shadow: 0 0 6px rgba(159, 122, 234, 0.6);
+}
+.heatmap-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.heatmap-legend .heatmap-cell {
+  width: 9px;
+  height: 9px;
+  cursor: default;
+}
+
+/* ==========================================================================
+   App - 3: Focus Studio & Pomodoro Terminal
+   ========================================================================== */
+.focus-studio-card {
+  background: linear-gradient(145deg, #171d31, #0f1422);
+  border: 1px solid rgba(159, 122, 234, 0.35);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.focus-studio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.focus-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+.focus-icon {
+  color: var(--purple);
+}
+.focus-mode-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: rgba(159, 122, 234, 0.15);
+  color: var(--purple);
+  border: 1px solid rgba(159, 122, 234, 0.3);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.focus-sound-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sound-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #131929;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sound-chip:hover {
+  color: var(--text);
+  border-color: #4b5563;
+}
+.sound-chip.active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10b981;
+}
+.focus-timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0;
+}
+.digital-clock {
+  font-size: clamp(48px, 6vw, 68px);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #f7fafc;
+  text-shadow: 0 0 20px rgba(159, 122, 234, 0.3);
+}
+.focus-progress-bar {
+  width: 100%;
+  max-width: 440px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.focus-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple), var(--lime));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.focus-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.mode-toggle-group {
+  display: flex;
+  background: #111624;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+.mode-btn {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mode-btn:hover {
+  color: var(--text);
+}
+.mode-btn.active {
+  background: #1f293d;
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.focus-main-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.focus-main-btn.start {
+  background: var(--purple);
+  color: #0c101d;
+}
+.focus-main-btn.start:hover {
+  background: #a78bfa;
+}
+.focus-main-btn.pause {
+  background: #f59e0b;
+  color: #0c101d;
+}
+.focus-reset-btn {
+  background: #1a2236;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+.focus-reset-btn:hover {
+  color: var(--text);
+  border-color: #4b5563;
+}
+.focus-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 12px;
+}
+.ambient-status {
+  color: var(--purple);
+  font-size: 11px;
+}
+
+/* ==========================================================================
+   App - 4: Project Kanban Board
+   ========================================================================== */
+.projects-top-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.layout-switcher-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #141a2a;
+  border: 1px solid var(--line);
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+.layout-switcher-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.layout-toggle-group {
+  display: flex;
+  gap: 6px;
+}
+.layout-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a2236;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.layout-toggle-btn:hover {
+  color: var(--text);
+}
+.layout-toggle-btn.active {
+  background: rgba(159, 122, 234, 0.18);
+  border-color: var(--purple);
+  color: var(--purple);
+}
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 6px;
+}
+@media (max-width: 900px) {
+  .kanban-board {
+    grid-template-columns: 1fr;
+  }
+}
+.kanban-column {
+  background: #101524;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 400px;
+}
+.kanban-column.col-amber {
+  border-top: 3px solid #f59e0b;
+}
+.kanban-column.col-purple {
+  border-top: 3px solid var(--purple);
+}
+.kanban-column.col-lime {
+  border-top: 3px solid #10b981;
+}
+.kanban-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.kanban-col-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kanban-col-title h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+.kanban-count-pill {
+  background: #1a2236;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 2px 7px;
+  border-radius: 12px;
+}
+.kanban-cards-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kanban-card {
+  background: #161c2e;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.kanban-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(159, 122, 234, 0.4);
+}
+.kanban-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.kanban-status-pill {
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.kanban-status-pill.amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+.kanban-status-pill.purple {
+  background: rgba(159, 122, 234, 0.15);
+  color: var(--purple);
+}
+.kanban-status-pill.lime {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+.kanban-card h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.kanban-card p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.kanban-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.kanban-tags span {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #a0aec0;
+}
+.kanban-progress {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.kanban-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.kanban-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kanban-links a {
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.kanban-links a:hover {
+  color: var(--purple);
+}
+.kanban-advance-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(159, 122, 234, 0.15);
+  border: 1px solid rgba(159, 122, 234, 0.3);
+  color: var(--purple);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.kanban-advance-btn:hover {
+  background: rgba(159, 122, 234, 0.3);
+}
+.kanban-empty-col {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+/* ==========================================================================
+   App - 6: Theme Accent Switcher & QR Modal
+   ========================================================================== */
+.theme-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.theme-option-card {
+  background: #141a2a;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+.theme-option-card:hover {
+  border-color: #4b5563;
+  transform: translateY(-1px);
+}
+.theme-option-card.active {
+  border-color: var(--purple);
+  background: rgba(159, 122, 234, 0.08);
+}
+.theme-color-preview {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.theme-option-text {
+  display: flex;
+  flex-direction: column;
+}
+.theme-option-text b {
+  font-size: 13px;
+  color: var(--text);
+}
+.theme-option-text small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.theme-active-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--purple);
+  background: rgba(159, 122, 234, 0.2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.qr-trigger-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.qr-modal-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.qr-trigger-subtext {
+  font-size: 12px;
+  color: var(--muted);
+}
+.qr-trigger-subtext code {
+  color: var(--purple);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* Modal styling */
+.qr-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+.qr-modal-content {
+  background: #0f1424;
+  border: 1px solid rgba(159, 122, 234, 0.4);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+}
+.qr-modal-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.qr-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.qr-modal-header small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.qr-close-btn {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+.qr-close-btn:hover {
+  color: var(--text);
+}
+.qr-code-frame {
+  background: #060913;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.qr-image {
+  border-radius: 6px;
+}
+.qr-scan-hint {
+  font-size: 11px;
+  color: var(--muted);
+}
+.qr-url-box {
+  width: 100%;
+  display: flex;
+  gap: 6px;
+}
+.qr-url-box input {
+  flex: 1;
+  background: #141a2a;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+}
+.qr-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--purple);
+  color: #0b0f19;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 0;
+  cursor: pointer;
+}
+.qr-modal-footer {
+  width: 100%;
+  text-align: center;
+}
+.qr-open-btn {
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.qr-open-btn:hover {
+  color: var(--purple);
+}
+

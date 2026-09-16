@@ -39,6 +39,13 @@ type UpsolveProblem = {
   date: string;
   url: string;
 };
+type LeetCodeDaily = {
+  title: string;
+  difficulty: string;
+  url: string;
+  date: string;
+  tags: string[];
+};
 type Message = { role: "jarvis" | "user"; text: string };
 type SpeechRecognitionCtor = new () => {
   lang: string;
@@ -58,6 +65,7 @@ export default function JarvisAssistant({
   notify,
   contests = [],
   upsolvingQueue = [],
+  dailyChallenge = null,
 }: {
   setView: React.Dispatch<React.SetStateAction<string>>;
   goals: Goal[];
@@ -69,6 +77,7 @@ export default function JarvisAssistant({
   notify: (message: string) => void;
   contests?: UpcomingContest[];
   upsolvingQueue?: UpsolveProblem[];
+  dailyChallenge?: LeetCodeDaily | null;
 }) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -206,10 +215,56 @@ export default function JarvisAssistant({
       );
       return;
     }
+    if (/morning|standup|start my day|briefing|daily brief/.test(lower)) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const activeGoal = goals.find((item) => item.done < item.target);
+      const dueHabits = habits.filter(
+        (item) => !(item.history || []).includes(todayStr),
+      );
+      const nextContest = contests && contests.length > 0 ? contests[0] : null;
+
+      let brief = "Good morning, Adarsh. Here is your daily developer briefing. ";
+      if (dailyChallenge) {
+        brief += `Today's LeetCode POTD is "${dailyChallenge.title}" (${dailyChallenge.difficulty}). `;
+      }
+      if (nextContest) {
+        const days = Math.floor(nextContest.relativeTimeSeconds / 86400);
+        const hours = Math.floor((nextContest.relativeTimeSeconds % 86400) / 3600);
+        const timeStr = days > 0 ? `in ${days}d ${hours}h` : `in ${hours}h`;
+        brief += `Next Codeforces contest: ${nextContest.name} ${timeStr}. `;
+      }
+      if (activeGoal) {
+        brief += `Primary target: "${activeGoal.title}" (${activeGoal.done}/${activeGoal.target}). `;
+      }
+      if (dueHabits.length > 0) {
+        brief += `${dueHabits.length} habits pending check-in today. `;
+      }
+      brief += "Ready to build and conquer milestones today.";
+      answer(brief);
+      return;
+    }
+    if (/evening|debrief|wrap up|end my day|good night|daily debrief/.test(lower)) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const checkedHabits = habits.filter((item) =>
+        (item.history || []).includes(todayStr),
+      );
+      const completedGoals = goals.filter((g) => g.done >= g.target);
+      const pendingUpsolveCount = upsolvingQueue ? upsolvingQueue.length : 0;
+
+      let debrief = "Good evening, Adarsh. Let's review your accomplishments today. ";
+      debrief += `${checkedHabits.length} of ${habits.length} habits logged. `;
+      debrief += `${completedGoals.length} goals fully achieved. `;
+      if (pendingUpsolveCount > 0) {
+        debrief += `You have ${pendingUpsolveCount} problems in your upsolve queue ready for practice. `;
+      }
+      debrief += "Great discipline today. Rest well and prepare for tomorrow's engineering sprint.";
+      answer(debrief);
+      return;
+    }
     if (/what should i do|next move|brief me|my day/.test(lower)) {
       const goal = goals.find((item) => item.done < item.target);
       const dueHabits = habits.filter(
-        (item) => !item.history.includes(new Date().toISOString().slice(0, 10)),
+        (item) => !(item.history || []).includes(new Date().toISOString().slice(0, 10)),
       );
       const next = reminders
         .filter((item) => !item.completed)
@@ -220,7 +275,7 @@ export default function JarvisAssistant({
       return;
     }
     answer(
-      "I can open pages, tell you upcoming contests, recommend upsolving problems, add a goal or habit, schedule a reminder, or brief your day. Try “when is the next contest?” or “what should I upsolve?”",
+      "I can run your morning briefing or evening debrief, show upcoming contests, recommend upsolve targets, manage goals, and schedule reminders. Try “Morning briefing” or “When is the next contest?”",
     );
   };
   const listen = () => {
@@ -299,14 +354,17 @@ export default function JarvisAssistant({
             ))}
           </div>
           <div className="jarvis-suggestions">
+            <button onClick={() => handle("Morning briefing")}>
+              🌅 Morning brief
+            </button>
+            <button onClick={() => handle("Evening debrief")}>
+              🌙 Evening debrief
+            </button>
             <button onClick={() => handle("When is the next contest?")}>
               Next contest
             </button>
             <button onClick={() => handle("What should I upsolve?")}>
               Upsolve advice
-            </button>
-            <button onClick={() => handle("What should I do?")}>
-              Brief my day
             </button>
             <button onClick={enableNotifications}>
               <Bell size={13} /> Enable alerts

@@ -73,6 +73,13 @@ export type UpcomingContest = {
   startTime: string;
   url: string;
 };
+export type LeetCodeDaily = {
+  title: string;
+  difficulty: string;
+  url: string;
+  date: string;
+  tags: string[];
+};
 
 async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
@@ -292,7 +299,31 @@ export async function GET() {
     ),
   );
 
-  await Promise.all([githubTask, leetcodeTask, codeforcesTask, contestTask]);
+  let dailyChallenge: LeetCodeDaily | null = null;
+  const dailyTask = (async () => {
+    const daily = await getJson<{
+      questionTitle?: string;
+      difficulty?: string;
+      questionLink?: string;
+      date?: string;
+      topicTags?: Array<{ name: string }>;
+    }>("https://alfa-leetcode-api.onrender.com/daily");
+    if (daily && daily.questionTitle) {
+      dailyChallenge = {
+        title: daily.questionTitle,
+        difficulty: daily.difficulty || "Medium",
+        url: daily.questionLink || "https://leetcode.com/problemset/",
+        date: daily.date || new Date().toISOString().slice(0, 10),
+        tags: (daily.topicTags || []).map((t) => t.name),
+      };
+    }
+  })().catch((error: unknown) =>
+    errors.push(
+      `LeetCode Daily: ${error instanceof Error ? error.message : "unavailable"}`,
+    ),
+  );
+
+  await Promise.all([githubTask, leetcodeTask, codeforcesTask, contestTask, dailyTask]);
   problems.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
   return Response.json(
@@ -310,6 +341,7 @@ export async function GET() {
       problems,
       contests,
       upsolvingQueue,
+      dailyChallenge,
       errors,
       updatedAt: new Date().toISOString(),
     },

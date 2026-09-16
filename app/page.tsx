@@ -7,6 +7,11 @@ import {
   PortfolioConfig,
   readPortfolioConfig,
 } from "@/lib/portfolio-config";
+import FocusStudio from "@/components/FocusStudio";
+import QrCodeModal from "@/components/QrCodeModal";
+import TopicMastery from "@/components/TopicMastery";
+import ProblemHeatmap from "@/components/ProblemHeatmap";
+import KanbanBoard from "@/components/KanbanBoard";
 import {
   Activity,
   BookOpen,
@@ -17,11 +22,15 @@ import {
   ExternalLink,
   FileText,
   Globe2,
+  Kanban,
   LayoutDashboard,
+  LayoutGrid,
   Plus,
+  QrCode,
   Search,
   Settings,
   ShieldCheck,
+  Sparkles,
   Target,
   Trophy,
   Trash2,
@@ -81,6 +90,13 @@ type UpsolveProblem = {
   date: string;
   url: string;
 };
+type LeetCodeDaily = {
+  title: string;
+  difficulty: string;
+  url: string;
+  date: string;
+  tags: string[];
+};
 type Stats = {
   github: number;
   repos: number;
@@ -110,6 +126,7 @@ type LiveProfile = {
   problems: Problem[];
   contests?: UpcomingContest[];
   upsolvingQueue?: UpsolveProblem[];
+  dailyChallenge?: LeetCodeDaily | null;
   errors: string[];
   updatedAt: string;
 };
@@ -238,6 +255,10 @@ export default function Home() {
     [contests, setContests] = useState<UpcomingContest[]>([]),
     [upsolvingQueue, setUpsolvingQueue] = useState<UpsolveProblem[]>([]),
     [expandedHintId, setExpandedHintId] = useState<string | null>(null),
+    [dailyChallenge, setDailyChallenge] = useState<LeetCodeDaily | null>(null),
+    [projectLayout, setProjectLayout] = useState<"grid" | "kanban">("grid"),
+    [showQrModal, setShowQrModal] = useState(false),
+    [accentTheme, setAccentTheme] = useState<"purple" | "lime" | "cyan" | "amber">("purple"),
     [goals, setGoals] = useState<Goal[]>(goalsSeed),
     [habits, setHabits] = useState<Habit[]>(habitsSeed),
     [reminders, setReminders] = useState<Reminder[]>([]),
@@ -258,6 +279,64 @@ export default function Home() {
     }),
     [reminderForm, setReminderForm] = useState({ title: "", remindAt: "" }),
     [projectForm, setProjectForm] = useState({ name: "", summary: "" });
+
+  const applyTheme = (theme: "purple" | "lime" | "cyan" | "amber") => {
+    setAccentTheme(theme);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("codefolio-accent-theme", theme);
+      } catch {}
+      const colors = {
+        purple: { purple: "#9f7aea", purpleSoft: "rgba(159, 122, 234, 0.15)" },
+        lime: { purple: "#10b981", purpleSoft: "rgba(16, 185, 129, 0.15)" },
+        cyan: { purple: "#06b6d4", purpleSoft: "rgba(6, 182, 212, 0.15)" },
+        amber: { purple: "#f59e0b", purpleSoft: "rgba(245, 158, 11, 0.15)" },
+      };
+      document.documentElement.style.setProperty("--purple", colors[theme].purple);
+      document.documentElement.style.setProperty("--purple-soft", colors[theme].purpleSoft);
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const savedTheme = localStorage.getItem("codefolio-accent-theme") as
+          | "purple"
+          | "lime"
+          | "cyan"
+          | "amber"
+          | null;
+        if (
+          savedTheme &&
+          ["purple", "lime", "cyan", "amber"].includes(savedTheme)
+        ) {
+          applyTheme(savedTheme);
+        }
+      } catch {}
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const advanceProjectStatus = (id: number | string) => {
+    setProjects((items) =>
+      items.map((p) => {
+        if (p.id !== id) return p;
+        const current = (p.status || "").toLowerCase();
+        let nextStatus = "In Progress";
+        let nextProgress = Math.max(40, p.progress);
+        if (current === "in progress" || current === "active" || current === "building") {
+          nextStatus = "Shipped";
+          nextProgress = 100;
+        } else if (current === "shipped" || current === "completed" || current === "done") {
+          nextStatus = "Backlog";
+          nextProgress = 15;
+        }
+        return { ...p, status: nextStatus, progress: nextProgress };
+      }),
+    );
+    notify("Project stage updated");
+  };
+
   const applyLive = (
     data: LiveProfile,
     manualProblems: Problem[] = problems.filter((p) => p.source === "Manual"),
@@ -267,6 +346,7 @@ export default function Home() {
     setProjects([...manualProjects, ...data.projects]);
     if (data.contests) setContests(data.contests);
     if (data.upsolvingQueue) setUpsolvingQueue(data.upsolvingQueue);
+    if (data.dailyChallenge) setDailyChallenge(data.dailyChallenge);
     setStats({
       github: data.stats.github.followers,
       repos: data.stats.github.repos,
@@ -577,9 +657,19 @@ export default function Home() {
             <p className="kicker">PERSONAL DEVELOPER WORKSPACE</p>
             <h1>{title}</h1>
           </div>
-          <div className="live-source">
-            <span />
-            Live data updates automatically
+          <div className="header-actions-group">
+            <button
+              className="qr-header-trigger"
+              onClick={() => setShowQrModal(true)}
+              title="Share portfolio QR code"
+            >
+              <QrCode size={14} />
+              <span>Share QR</span>
+            </button>
+            <div className="live-source">
+              <span />
+              Live data updates automatically
+            </div>
           </div>
         </header>
         {toast && <div className="toast">{toast}</div>}
@@ -595,6 +685,42 @@ export default function Home() {
         )}{" "}
         {view === "journal" && (
           <section className="stack">
+            {dailyChallenge && (
+              <article className="daily-challenge-card">
+                <div className="daily-challenge-head">
+                  <div className="daily-badge-row">
+                    <span className="daily-pill potd">
+                      <Sparkles size={13} /> PROBLEM OF THE DAY
+                    </span>
+                    <span
+                      className={`daily-pill diff-${dailyChallenge.difficulty.toLowerCase()}`}
+                    >
+                      {dailyChallenge.difficulty}
+                    </span>
+                    <span className="daily-date">{dailyChallenge.date}</span>
+                  </div>
+                  <a
+                    href={dailyChallenge.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="daily-solve-btn"
+                  >
+                    Solve on LeetCode <ExternalLink size={13} />
+                  </a>
+                </div>
+                <div className="daily-challenge-body">
+                  <h3 className="daily-title">{dailyChallenge.title}</h3>
+                  <div className="daily-tags">
+                    {dailyChallenge.tags.map((t) => (
+                      <span key={t} className="daily-tag">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            )}
+
             <div className="coding-stats">
               <article>
                 <span>LeetCode</span>
@@ -839,6 +965,9 @@ export default function Home() {
               </div>
             </Panel>
 
+            <TopicMastery problems={problems} />
+            <ProblemHeatmap problems={problems} />
+
             <Panel
               title="Latest accepted submissions"
               eyebrow="LIVE PROBLEM JOURNAL"
@@ -911,29 +1040,61 @@ export default function Home() {
         )}
         {view === "projects" && (
           <section className="stack">
-            <Panel title="Create a project" eyebrow="WORKBENCH">
-              <div className="inline-form">
-                <input
-                  placeholder="Project name"
-                  value={projectForm.name}
-                  onChange={(e) =>
-                    setProjectForm({ ...projectForm, name: e.target.value })
-                  }
-                />
-                <input
-                  placeholder="One-line summary"
-                  value={projectForm.summary}
-                  onChange={(e) =>
-                    setProjectForm({ ...projectForm, summary: e.target.value })
-                  }
-                />
-                <button className="primary" onClick={addProject}>
-                  <Plus size={16} />
-                  Add
-                </button>
+            <div className="projects-top-bar">
+              <Panel title="Create a project" eyebrow="WORKBENCH">
+                <div className="inline-form">
+                  <input
+                    placeholder="Project name"
+                    value={projectForm.name}
+                    onChange={(e) =>
+                      setProjectForm({ ...projectForm, name: e.target.value })
+                    }
+                  />
+                  <input
+                    placeholder="One-line summary"
+                    value={projectForm.summary}
+                    onChange={(e) =>
+                      setProjectForm({ ...projectForm, summary: e.target.value })
+                    }
+                  />
+                  <button className="primary" onClick={addProject}>
+                    <Plus size={16} />
+                    Add
+                  </button>
+                </div>
+              </Panel>
+
+              <div className="layout-switcher-card">
+                <span className="layout-switcher-label">VIEW MODE</span>
+                <div className="layout-toggle-group">
+                  <button
+                    className={`layout-toggle-btn ${projectLayout === "grid" ? "active" : ""}`}
+                    onClick={() => setProjectLayout("grid")}
+                  >
+                    <LayoutGrid size={14} /> Grid
+                  </button>
+                  <button
+                    className={`layout-toggle-btn ${projectLayout === "kanban" ? "active" : ""}`}
+                    onClick={() => setProjectLayout("kanban")}
+                  >
+                    <Kanban size={14} /> Kanban
+                  </button>
+                </div>
               </div>
-            </Panel>
-            <div className="cards">
+            </div>
+
+            {projectLayout === "kanban" ? (
+              <KanbanBoard
+                projects={projects}
+                onAdvanceStage={advanceProjectStatus}
+                onTogglePublic={(id) =>
+                  setProjects((x) =>
+                    x.map((q) => (q.id === id ? { ...q, public: !q.public } : q)),
+                  )
+                }
+              />
+            ) : (
+              <div className="cards">
               {projects.map((p) => (
                 <article className="project" key={p.id}>
                   <div className="row">
@@ -991,11 +1152,17 @@ export default function Home() {
                     : "Loading GitHub repositories…"}
                 </div>
               )}
-            </div>
+              </div>
+            )}
           </section>
         )}
         {view === "goals" && (
           <section className="stack life-dashboard">
+            <FocusStudio
+              onSessionComplete={(mins) =>
+                notify(`Focus session of ${mins}m completed! Consistency boosted.`)
+              }
+            />
             <div className="split">
               <Panel title="Editable goals" eyebrow="DIRECTION">
                 <div className="goal-create">
@@ -1256,6 +1423,9 @@ export default function Home() {
             config={portfolioConfig}
             setConfig={setPortfolioConfig}
             notify={notify}
+            accentTheme={accentTheme}
+            applyTheme={applyTheme}
+            onOpenQrModal={() => setShowQrModal(true)}
           />
         )}
         <JarvisAssistant
@@ -1269,6 +1439,11 @@ export default function Home() {
           notify={notify}
           contests={contests}
           upsolvingQueue={upsolvingQueue}
+          dailyChallenge={dailyChallenge}
+        />
+        <QrCodeModal
+          isOpen={showQrModal}
+          onClose={() => setShowQrModal(false)}
         />
       </section>
     </main>
@@ -1729,6 +1904,9 @@ function SettingsView({
   config,
   setConfig,
   notify,
+  accentTheme,
+  applyTheme,
+  onOpenQrModal,
 }: {
   privacy: boolean;
   setPrivacy: React.Dispatch<React.SetStateAction<boolean>>;
@@ -1739,9 +1917,59 @@ function SettingsView({
   config: PortfolioConfig;
   setConfig: React.Dispatch<React.SetStateAction<PortfolioConfig>>;
   notify: (message: string) => void;
+  accentTheme: "purple" | "lime" | "cyan" | "amber";
+  applyTheme: (theme: "purple" | "lime" | "cyan" | "amber") => void;
+  onOpenQrModal: () => void;
 }) {
+  const themes = [
+    { id: "purple", label: "Cyber Purple", hex: "#9f7aea", desc: "Default cybernetic neon" },
+    { id: "lime", label: "Matrix Lime", hex: "#10b981", desc: "Terminal hacker green" },
+    { id: "cyan", label: "Neon Cyan", hex: "#06b6d4", desc: "Sci-fi electric blue" },
+    { id: "amber", label: "Solar Amber", hex: "#f59e0b", desc: "High-contrast golden flare" },
+  ] as const;
+
   return (
     <section className="stack settings-stack">
+      <div className="split">
+        <Panel title="Workspace Accent Theme" eyebrow="APPEARANCE">
+          <p className="dashboard-note" style={{ marginTop: 0 }}>
+            Choose your command center accent color. Changes persist instantly across sessions.
+          </p>
+          <div className="theme-options-grid">
+            {themes.map((t) => (
+              <button
+                key={t.id}
+                className={`theme-option-card ${accentTheme === t.id ? "active" : ""}`}
+                onClick={() => applyTheme(t.id)}
+              >
+                <div className="theme-color-preview" style={{ background: t.hex }} />
+                <div className="theme-option-text">
+                  <b>{t.label}</b>
+                  <small>{t.desc}</small>
+                </div>
+                {accentTheme === t.id && (
+                  <span className="theme-active-tag">Active</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Recruiter QR Share" eyebrow="MOBILE PORTFOLIO">
+          <p className="dashboard-note" style={{ marginTop: 0 }}>
+            Generate a clean, high-resolution QR code to share your standalone portfolio instantly on mobile.
+          </p>
+          <div className="qr-trigger-box">
+            <button className="primary qr-modal-trigger-btn" onClick={onOpenQrModal}>
+              <QrCode size={16} /> Open Scannable QR Code
+            </button>
+            <span className="qr-trigger-subtext">
+              Direct mobile preview for <code>/portfolio</code>
+            </span>
+          </div>
+        </Panel>
+      </div>
+
       <div className="split">
         <Panel title="Profile connections" eyebrow="LIVE DATA">
           <div className="connection">
