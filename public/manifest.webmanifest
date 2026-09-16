@@ -1,0 +1,10 @@
+{
+  "name": "Codefolio Developer OS",
+  "short_name": "Codefolio",
+  "description": "Goals, habits, projects, portfolio and Jarvis in one workspace.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d19",
+  "theme_color": "#090d19",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

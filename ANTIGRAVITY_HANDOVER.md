@@ -1,5 +1,25 @@
 # Codefolio handover
 
+## September 2026 product update
+
+The workspace now has a real daily operating-system layer in addition to the developer profile:
+
+- Home is a non-repeating command center. Coding totals, ratings, topic coverage, and submissions live only in **Coding dashboard**.
+- Goals are editable. Habits and bad-habit trackers use a clickable 28-day calendar.
+- Reminders are stored and announced in-app, by browser notification (after permission), and with speech while the app is open.
+- The floating `JarvisAssistant` supports text/voice commands for navigation, adding goals/habits, scheduling reminders, and daily briefings.
+- User-owned workspace state is persisted through `GET/PUT /api/workspace` into Cloudflare D1, with localStorage as an offline fallback.
+- The app ships a web manifest and responsive layouts at 390px, 768px, and desktop widths. Native background alarms/push will still require a mobile runtime or push service in a later phase.
+
+Database setup after a fresh clone:
+
+```powershell
+npm run db:generate
+node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_careful_ben_grimm.sql
+```
+
+New key files are `components/JarvisAssistant.tsx`, `app/api/workspace/route.ts`, `db/schema.ts`, and `public/manifest.webmanifest`.
+
 ## Project and intent
 
 This is Adarsh Khare's personal developer dashboard, **Codefolio**. The visual direction is a dark, black/navy developer workspace with purple and lime accents. The user wants real profile data shown in the UI rather than resume-derived or placeholder values:
@@ -63,17 +83,7 @@ Configured profile handles:
 
 ## Current implementation state
 
-The live-data route and client integration have been added, but the worktree was handed over before final verification and before the corresponding CSS cleanup. Please complete these items before considering it done:
-
-1. Run `npm run lint` and `npm run build`; repair any TypeScript, lint, or Cloudflare/Vinext compatibility errors.
-2. Finish CSS support in `app/globals.css` for the new markup:
-   - `.links a` should look like the former `.links button`.
-   - source links in journal/activity rows should be visible and inherit the dark theme.
-   - add styles for `.empty-row`, `.sync-status`, and `.source-error`.
-   - a `Solved` pill needs a sensible status color.
-3. Start the local preview and inspect `/api/profile` plus the Overview, Problem journal, Projects, and Settings screens in desktop and mobile widths.
-4. Ensure zero/partial failures are truthful: no fake rating, fake solved count, fake project, or fake journal entry should appear.
-5. Commit and push the completed work to `main` after verifying it.
+TypeScript, ESLint, the production build, D1 persistence, and browser breakpoints were verified during the Jarvis update. Continue to preserve truthful partial platform failures and keep personal planning data separate from live coding-platform records.
 
 ## Product behavior to preserve
 

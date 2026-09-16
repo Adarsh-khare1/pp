@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import PortfolioAdmin from "@/components/PortfolioAdmin";
+import JarvisAssistant from "@/components/JarvisAssistant";
 import { defaultPortfolioConfig, PortfolioConfig, readPortfolioConfig } from "@/lib/portfolio-config";
 import {
   Activity,
@@ -17,7 +18,6 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  Sparkles,
   Target,
   Trophy,
   Trash2,
@@ -49,7 +49,8 @@ type Project = {
   source?: string;
 };
 type Goal = { id: number; title: string; target: number; done: number };
-type Habit = { id: number; title: string; kind: "build" | "break"; streak: number; doneToday: boolean };
+type Habit = { id: number; title: string; kind: "build" | "break"; streak: number; doneToday: boolean; history: string[] };
+type Reminder = { id: number; title: string; remindAt: string; completed: boolean; notified?: boolean };
 type Stats = {
   github: number;
   repos: number;
@@ -99,9 +100,9 @@ const goalsSeed: Goal[] = [
   { id: 3, title: "Ship one project", target: 1, done: 1 },
 ];
 const habitsSeed: Habit[] = [
-  { id: 1, title: "Code with full focus", kind: "build", streak: 4, doneToday: false },
-  { id: 2, title: "Exercise for 30 minutes", kind: "build", streak: 2, doneToday: false },
-  { id: 3, title: "Avoid mindless scrolling", kind: "break", streak: 3, doneToday: false },
+  { id: 1, title: "Code with full focus", kind: "build", streak: 0, doneToday: false, history: [] },
+  { id: 2, title: "Exercise for 30 minutes", kind: "build", streak: 0, doneToday: false, history: [] },
+  { id: 3, title: "Avoid mindless scrolling", kind: "break", streak: 0, doneToday: false, history: [] },
 ];
 const nav = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -112,14 +113,8 @@ const nav = [
   { id: "resume", label: "Resume", icon: FileText },
   { id: "settings", label: "Settings", icon: Settings },
 ];
-const topics = [
-  "Arrays",
-  "Graphs",
-  "Dynamic Programming",
-  "Trees",
-  "Strings",
-  "Math",
-];
+const dateKey = (date = new Date()) => date.toISOString().slice(0, 10);
+const normalizeHabits = (items: Habit[]) => items.map((habit) => ({ ...habit, history: habit.history || (habit.doneToday ? [dateKey()] : []) }));
 
 export default function Home() {
   const [view, setView] = useState("overview"),
@@ -127,8 +122,9 @@ export default function Home() {
     [projects, setProjects] = useState<Project[]>([]),
     [goals, setGoals] = useState<Goal[]>(goalsSeed),
     [habits, setHabits] = useState<Habit[]>(habitsSeed),
+    [reminders, setReminders] = useState<Reminder[]>([]),
+    [workspaceReady, setWorkspaceReady] = useState(false),
     [portfolioConfig, setPortfolioConfig] = useState<PortfolioConfig>(defaultPortfolioConfig),
-    [command, setCommand] = useState(""),
     [query, setQuery] = useState(""),
     [privacy, setPrivacy] = useState(true),
     [toast, setToast] = useState(""),
@@ -137,6 +133,7 @@ export default function Home() {
     [updatedAt, setUpdatedAt] = useState(""),
     [goalForm, setGoalForm] = useState({ title: "", target: "" }),
     [habitForm, setHabitForm] = useState({ title: "", kind: "build" as "build" | "break" }),
+    [reminderForm, setReminderForm] = useState({ title: "", remindAt: "" }),
     [projectForm, setProjectForm] = useState({ name: "", summary: "" });
   const applyLive = (
     data: LiveProfile,
@@ -172,6 +169,8 @@ export default function Home() {
       let manualProjects: Project[] = [];
       let savedGoals = goalsSeed;
       let savedHabits = habitsSeed;
+      let savedReminders: Reminder[] = [];
+      let savedConfig = readPortfolioConfig();
       try {
         const saved = localStorage.getItem("codefolio-manual-v3");
         if (saved) {
@@ -183,7 +182,22 @@ export default function Home() {
             (p: Project) => p.source === "Manual",
           );
           savedGoals = x.goals || goalsSeed;
-          savedHabits = x.habits || habitsSeed;
+          savedHabits = normalizeHabits(x.habits || habitsSeed);
+          savedReminders = x.reminders || [];
+          savedConfig = x.portfolioConfig || savedConfig;
+        }
+      } catch {}
+      try {
+        const workspaceResponse = await fetch("/api/workspace", { cache: "no-store" });
+        const workspace = await workspaceResponse.json() as { data?: { problems?: Problem[]; projects?: Project[]; goals?: Goal[]; habits?: Habit[]; reminders?: Reminder[]; portfolioConfig?: PortfolioConfig } };
+        if (workspace.data) {
+          const x = workspace.data;
+          manualProblems = (x.problems || []).filter((p: Problem) => p.source === "Manual");
+          manualProjects = (x.projects || []).filter((p: Project) => p.source === "Manual");
+          savedGoals = x.goals || goalsSeed;
+          savedHabits = normalizeHabits(x.habits || habitsSeed);
+          savedReminders = x.reminders || [];
+          savedConfig = x.portfolioConfig || savedConfig;
         }
       } catch {}
       try {
@@ -205,6 +219,9 @@ export default function Home() {
       }
       if (active) setGoals(savedGoals);
       if (active) setHabits(savedHabits);
+      if (active) setReminders(savedReminders);
+      if (active) setPortfolioConfig(savedConfig);
+      if (active) setWorkspaceReady(true);
     }, 0);
     return () => {
       active = false;
@@ -213,23 +230,43 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
+    if (!workspaceReady) return;
+    const data = {
+      problems: problems.filter((p) => p.source === "Manual"),
+      projects: projects.filter((p) => p.source === "Manual"),
+      goals,
+      habits,
+      reminders,
+      portfolioConfig,
+    };
     localStorage.setItem(
       "codefolio-manual-v3",
-      JSON.stringify({
-        problems: problems.filter((p) => p.source === "Manual"),
-        projects: projects.filter((p) => p.source === "Manual"),
-        goals,
-        habits,
-      }),
+      JSON.stringify(data),
     );
-  }, [problems, projects, goals, habits]);
+    const timer = window.setTimeout(() => fetch("/api/workspace", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(data) }).catch(() => undefined), 500);
+    return () => window.clearTimeout(timer);
+  }, [problems, projects, goals, habits, reminders, portfolioConfig, workspaceReady]);
   const notify = (s: string) => {
     setToast(s);
     setTimeout(() => setToast(""), 2600);
   };
   const addGoal = () => { const target = Number(goalForm.target); if (!goalForm.title.trim() || !target) return; setGoals((items) => [...items, { id: Date.now(), title: goalForm.title.trim(), target, done: 0 }]); setGoalForm({ title: "", target: "" }); notify("Goal added"); };
-  const addHabit = () => { if (!habitForm.title.trim()) return; setHabits((items) => [...items, { id: Date.now(), title: habitForm.title.trim(), kind: habitForm.kind, streak: 0, doneToday: false }]); setHabitForm({ ...habitForm, title: "" }); notify(habitForm.kind === "build" ? "Habit added" : "Bad-habit tracker added"); };
-  const toggleHabit = (id: number) => setHabits((items) => items.map((habit) => habit.id === id ? { ...habit, doneToday: !habit.doneToday, streak: habit.doneToday ? Math.max(0, habit.streak - 1) : habit.streak + 1 } : habit));
+  const addHabit = () => { if (!habitForm.title.trim()) return; setHabits((items) => [...items, { id: Date.now(), title: habitForm.title.trim(), kind: habitForm.kind, streak: 0, doneToday: false, history: [] }]); setHabitForm({ ...habitForm, title: "" }); notify(habitForm.kind === "build" ? "Habit added" : "Bad-habit tracker added"); };
+  const toggleHabitDate = (id: number, day = dateKey()) => setHabits((items) => items.map((habit) => { if (habit.id !== id) return habit; const history = habit.history || []; const exists = history.includes(day); const next = exists ? history.filter((item) => item !== day) : [...history, day]; return { ...habit, history: next, doneToday: next.includes(dateKey()), streak: next.length }; }));
+  const addReminder = () => { if (!reminderForm.title.trim() || !reminderForm.remindAt) return; setReminders((items) => [...items, { id: Date.now(), title: reminderForm.title.trim(), remindAt: new Date(reminderForm.remindAt).toISOString(), completed: false }]); setReminderForm({ title: "", remindAt: "" }); notify("Reminder scheduled"); };
+  useEffect(() => {
+    if (!workspaceReady) return;
+    const check = () => setReminders((items) => items.map((reminder) => {
+      if (reminder.completed || reminder.notified || new Date(reminder.remindAt).getTime() > Date.now()) return reminder;
+      notify(`Reminder: ${reminder.title}`);
+      if ("Notification" in window && Notification.permission === "granted") new Notification("Jarvis reminder", { body: reminder.title });
+      if ("speechSynthesis" in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(`Reminder. ${reminder.title}`));
+      return { ...reminder, notified: true };
+    }));
+    check();
+    const timer = window.setInterval(check, 30000);
+    return () => window.clearInterval(timer);
+  }, [workspaceReady]);
   const addProject = () => {
     if (!projectForm.name.trim()) return;
     setProjects((p) => [
@@ -251,16 +288,6 @@ export default function Home() {
     setProjectForm({ name: "", summary: "" });
     notify("Project added");
   };
-  const runCommand = () => {
-    const c = command.trim();
-    if (!c) return;
-    if (/solved|problem/i.test(c)) setView("journal");
-    else if (/resume/i.test(c)) setView("resume");
-    else if (/portfolio/i.test(c)) setView("portfolio");
-    else if (/project/i.test(c)) setView("projects");
-    notify(`Update noted: ${c}`);
-    setCommand("");
-  };
   const exportData = () => {
     const blob = new Blob(
       [
@@ -271,6 +298,7 @@ export default function Home() {
             projects,
             goals,
             habits,
+            reminders,
           },
           null,
           2,
@@ -288,17 +316,6 @@ export default function Home() {
     (p.title + p.topic + p.platform)
       .toLowerCase()
       .includes(query.toLowerCase()),
-  );
-  const skills = useMemo(
-    () =>
-      topics.map((t) => ({
-        name: t,
-        value: Math.max(
-          18,
-          problems.filter((p) => p.topic === t).length * 18 + 24,
-        ),
-      })),
-    [problems],
   );
   const title = nav.find((n) => n.id === view)?.label || "Overview";
   return (
@@ -342,11 +359,10 @@ export default function Home() {
         {toast && <div className="toast">{toast}</div>}
         {view === "overview" && (
           <Overview
-            stats={stats}
-            problems={problems}
             projects={projects}
             goals={goals}
-            skills={skills}
+            habits={habits}
+            reminders={reminders}
             setView={setView}
           />
         )}{" "}
@@ -516,8 +532,9 @@ export default function Home() {
         {view === "goals" && (
           <section className="stack life-dashboard">
             <div className="split"><Panel title="Editable goals" eyebrow="DIRECTION"><div className="goal-create"><input placeholder="New goal" value={goalForm.title} onChange={(e)=>setGoalForm({...goalForm,title:e.target.value})}/><input type="number" min="1" placeholder="Target" value={goalForm.target} onChange={(e)=>setGoalForm({...goalForm,target:e.target.value})}/><button className="primary" onClick={addGoal}><Plus size={15}/>Add</button></div>{goals.map((g)=><div className="goal editable-goal" key={g.id}><div className="goal-edit-row"><input aria-label="Goal name" value={g.title} onChange={(e)=>setGoals((items)=>items.map((item)=>item.id===g.id?{...item,title:e.target.value}:item))}/><input aria-label="Current progress" type="number" min="0" max={g.target} value={g.done} onChange={(e)=>setGoals((items)=>items.map((item)=>item.id===g.id?{...item,done:Math.min(item.target,Number(e.target.value))}:item))}/><span>/</span><input aria-label="Goal target" type="number" min="1" value={g.target} onChange={(e)=>setGoals((items)=>items.map((item)=>item.id===g.id?{...item,target:Math.max(1,Number(e.target.value))}:item))}/><button className="icon" aria-label={`Delete ${g.title}`} onClick={()=>setGoals((items)=>items.filter((item)=>item.id!==g.id))}><Trash2 size={15}/></button></div><div className="progress"><i style={{width:`${Math.min(100,g.done/g.target*100)}%`}}/></div></div>)}</Panel>
-            <Panel title="Today at a glance" eyebrow="CONSISTENCY"><div className="habit-summary"><div><b>{habits.filter((h)=>h.doneToday).length}/{habits.length}</b><span>check-ins today</span></div><div><b>{Math.max(0,...habits.map((h)=>h.streak))}</b><span>best streak</span></div></div><div className="contest"><CalendarDays/><div><b>Codeforces rounds</b><p>Keep competition part of the routine.</p><a href="https://codeforces.com/contests" target="_blank">View contests <ExternalLink size={14}/></a></div></div></Panel></div>
-            <Panel title="Habit & bad-habit tracker" eyebrow="DAILY SYSTEM"><div className="habit-create"><input placeholder="Habit to build or break" value={habitForm.title} onChange={(e)=>setHabitForm({...habitForm,title:e.target.value})}/><select value={habitForm.kind} onChange={(e)=>setHabitForm({...habitForm,kind:e.target.value as "build"|"break"})}><option value="build">Build a habit</option><option value="break">Break a bad habit</option></select><button className="primary" onClick={addHabit}><Plus size={15}/>Add tracker</button></div><div className="habit-grid">{habits.map((habit)=><article className={`habit-card ${habit.kind} ${habit.doneToday?"checked":""}`} key={habit.id}><div><span>{habit.kind==="build"?"BUILD":"BREAK"}</span><button className="icon" aria-label={`Delete ${habit.title}`} onClick={()=>setHabits((items)=>items.filter((item)=>item.id!==habit.id))}><Trash2 size={14}/></button></div><h3>{habit.title}</h3><p><b>{habit.streak}</b> day streak</p><button onClick={()=>toggleHabit(habit.id)}>{habit.doneToday?"✓ Checked today":habit.kind==="build"?"Mark complete":"I avoided it today"}</button></article>)}</div></Panel>
+            <Panel title="Today at a glance" eyebrow="CONSISTENCY"><div className="habit-summary"><div><b>{habits.filter((h)=>h.history.includes(dateKey())).length}/{habits.length}</b><span>check-ins today</span></div><div><b>{Math.max(0,...habits.map((h)=>h.streak))}</b><span>total check-ins</span></div></div><div className="reminder-mini"><CalendarDays/><div><b>{reminders.filter((r)=>!r.completed).length} active reminders</b><p>Jarvis can create and announce them for you.</p></div></div></Panel></div>
+            <Panel title="Habit calendar" eyebrow="DAILY SYSTEM"><div className="habit-create"><input placeholder="Habit to build or break" value={habitForm.title} onChange={(e)=>setHabitForm({...habitForm,title:e.target.value})}/><select value={habitForm.kind} onChange={(e)=>setHabitForm({...habitForm,kind:e.target.value as "build"|"break"})}><option value="build">Build a habit</option><option value="break">Break a bad habit</option></select><button className="primary" onClick={addHabit}><Plus size={15}/>Add tracker</button></div><div className="habit-calendar-list">{habits.map((habit)=><HabitCalendar key={habit.id} habit={habit} onToggle={toggleHabitDate} onDelete={()=>setHabits((items)=>items.filter((item)=>item.id!==habit.id))}/>)}</div></Panel>
+            <Panel title="Reminders & alarms" eyebrow="JARVIS SCHEDULE"><div className="reminder-create"><input placeholder="What should Jarvis remind you?" value={reminderForm.title} onChange={(e)=>setReminderForm({...reminderForm,title:e.target.value})}/><input type="datetime-local" value={reminderForm.remindAt} onChange={(e)=>setReminderForm({...reminderForm,remindAt:e.target.value})}/><button className="primary" onClick={addReminder}><Plus size={15}/>Schedule</button></div><div className="reminder-list">{reminders.map((reminder)=><div key={reminder.id} className={reminder.completed?"reminder done-reminder":"reminder"}><button aria-label="Toggle reminder" onClick={()=>setReminders((items)=>items.map((item)=>item.id===reminder.id?{...item,completed:!item.completed}:item))}>{reminder.completed?"✓":"○"}</button><div><b>{reminder.title}</b><span>{new Date(reminder.remindAt).toLocaleString()}</span></div><button className="icon" aria-label={`Delete ${reminder.title}`} onClick={()=>setReminders((items)=>items.filter((item)=>item.id!==reminder.id))}><Trash2 size={15}/></button></div>)}{!reminders.length&&<p className="dashboard-note">No reminders yet. Add one here or tell Jarvis.</p>}</div></Panel>
           </section>
         )}
         {view === "portfolio" && <WallOfPortfolios stats={stats} />}{" "}
@@ -535,16 +552,7 @@ export default function Home() {
             notify={notify}
           />
         )}
-        <div className="command">
-          <Sparkles size={18} />
-          <input
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runCommand()}
-            placeholder="Tell Codefolio: “I solved a graph problem today”"
-          />
-          <button onClick={runCommand}>Apply update</button>
-        </div>
+        <JarvisAssistant setView={setView} goals={goals} setGoals={setGoals} habits={habits} setHabits={setHabits} reminders={reminders} setReminders={setReminders} notify={notify}/>
       </section>
     </main>
   );
@@ -568,44 +576,45 @@ function Panel({
   );
 }
 function Overview({
-  stats,
-  problems,
   projects,
   goals,
-  skills,
+  habits,
+  reminders,
   setView,
 }: {
-  stats: Stats;
-  problems: Problem[];
   projects: Project[];
   goals: Goal[];
-  skills: { name: string; value: number }[];
+  habits: Habit[];
+  reminders: Reminder[];
   setView: React.Dispatch<React.SetStateAction<string>>;
 }) {
+  const focusGoal = goals.find((goal) => goal.done < goal.target);
+  const nextReminder = reminders.filter((item) => !item.completed && new Date(item.remindAt).getTime() > Date.now()).sort((a, b) => a.remindAt.localeCompare(b.remindAt))[0];
+  const doneToday = habits.filter((habit) => habit.history.includes(dateKey())).length;
   return (
     <section className="stack overview-stack">
-      <div className="hero">
+      <div className="hero reactive-hero" onMouseMove={(event) => { const rect = event.currentTarget.getBoundingClientRect(); event.currentTarget.style.setProperty("--mx", `${event.clientX - rect.left}px`); event.currentTarget.style.setProperty("--my", `${event.clientY - rect.top}px`); }}>
         <div className="hero-copy">
-          <p className="kicker">ADARSH KHARE · FULL STACK DEVELOPER</p>
+          <p className="kicker">YOUR PERSONAL OPERATING SYSTEM</p>
           <h2>
-            Build. Solve. Ship.
+            Own your day.
             <br />
-            <em>Prove it.</em>
+            <em>Build your future.</em>
           </h2>
           <p>
-            One living workspace for the code you write, the problems you solve,
-            and the products you ship.
+            Plan meaningful work, protect your habits, and let Jarvis keep the
+            details moving while you stay focused.
           </p>
           <div className="hero-actions">
-            <button onClick={() => setView("journal")}>
-              View live problem journal <ExternalLink size={16} />
+            <button onClick={() => setView("goals")}>
+              Plan today <Target size={16} />
             </button>
             <button className="hero-ghost" onClick={() => setView("projects")}>
-              View live projects
+              Continue a project
             </button>
           </div>
           <div className="hero-note">
-            <span>●</span> Synced from LeetCode, Codeforces, and GitHub
+            <span>●</span> Jarvis is ready · your workspace saves automatically
           </div>
         </div>
         <div className="hero-machine" aria-hidden="true">
@@ -620,158 +629,51 @@ function Overview({
             <small>DEV CORE</small>
           </div>
           <div className="machine-node node-code">
-            <Code2 size={18} />
-            <span>Code</span>
+            <Target size={18} />
+            <span>Focus</span>
           </div>
           <div className="machine-node node-build">
             <Activity size={18} />
-            <span>Build</span>
+            <span>Act</span>
           </div>
           <div className="machine-node node-ship">
             <BriefcaseBusiness size={18} />
-            <span>Ship</span>
+            <span>Grow</span>
           </div>
           <div className="status-bubble bubble-one">
-            Problem solved <b>✓</b>
+            Daily plan <b>Ready</b>
           </div>
           <div className="status-bubble bubble-two">
-            Profiles synced <b>Live</b>
+            Jarvis <b>Online</b>
           </div>
           <div className="status-bubble bubble-three">
-            Repos updated <b>{stats.repos}</b>
+            Habits today <b>{doneToday}/{habits.length}</b>
           </div>
           <div className="terminal-card">
-            <small>GITHUB ACTIVITY</small>
-            <strong>{stats.activeProjects} active projects</strong>
-            <code>
-              git push origin main <i>✓</i>
-            </code>
+            <small>NEXT MOVE</small>
+            <strong>{focusGoal?.title || "Choose a new goal"}</strong>
+            <code>focus mode <i>ready</i></code>
           </div>
           <span className="flow-ball ball-one" />
           <span className="flow-ball ball-two" />
           <span className="flow-ball ball-three" />
         </div>
       </div>
-      <div className="proof-strip">
-        <div className="proof-quote">
-          <strong>“Proof beats promises.”</strong>
-          <span>
-            Every accepted submission and repository update becomes visible
-            career evidence.
-          </span>
-        </div>
-        <div className="proof-brands">
-          {projects.slice(0, 3).map((p) => (
-            <button key={p.id} onClick={() => setView("projects")}>
-              <span>{p.name.slice(0, 1).toUpperCase()}</span>
-              {p.name}
-            </button>
-          ))}
-        </div>
+      <div className="home-grid">
+        <button className="home-card focus-card" onClick={() => setView("goals")}><span><Target size={19}/>TODAY&apos;S FOCUS</span><b>{focusGoal?.title || "Set your next goal"}</b><small>{focusGoal ? `${focusGoal.done} of ${focusGoal.target} complete` : "Start with one clear outcome"}</small></button>
+        <button className="home-card" onClick={() => setView("goals")}><span><CalendarDays size={19}/>HABIT RHYTHM</span><b>{doneToday}/{habits.length} checked in</b><small>Open the calendar and protect the streak</small></button>
+        <button className="home-card" onClick={() => setView("goals")}><span><Activity size={19}/>NEXT REMINDER</span><b>{nextReminder?.title || "Nothing scheduled"}</b><small>{nextReminder ? new Date(nextReminder.remindAt).toLocaleString() : "Ask Jarvis to remind you"}</small></button>
+        <button className="home-card" onClick={() => setView("projects")}><span><BriefcaseBusiness size={19}/>PROJECT SPACE</span><b>{projects[0]?.name || "Create a project"}</b><small>{projects.length} projects available</small></button>
       </div>
-      <div className="metrics">
-        <Metric
-          label="LeetCode solved"
-          value={stats.leetcode}
-          note={`${stats.leetcodeEasy} easy · ${stats.leetcodeMedium} medium · ${stats.leetcodeHard} hard`}
-          icon={BookOpen}
-        />
-        <Metric
-          label="Codeforces rating"
-          value={stats.cf || "—"}
-          note={`${stats.cfSolved} recent unique solves · ${stats.rank}`}
-          icon={Trophy}
-        />
-        <Metric
-          label="GitHub repos"
-          value={stats.repos}
-          note={`${stats.github} followers`}
-          icon={Code2}
-        />
-        <Metric
-          label="Active projects"
-          value={stats.activeProjects}
-          note={`${projects.length} recent GitHub repos`}
-          icon={BriefcaseBusiness}
-        />
+      <div className="split home-lower">
+        <Panel title="Goal momentum" eyebrow="MAKE THE NEXT MOVE">{goals.slice(0, 4).map((g)=><div className="mini-goal" key={g.id}><div className="row"><span>{g.title}</span><b>{Math.round(g.done/g.target*100)}%</b></div><div className="progress"><i style={{width:`${Math.min(100,g.done/g.target*100)}%`}}/></div></div>)}<button className="text-action" onClick={()=>setView("goals")}>Edit goals and habits →</button></Panel>
+        <Panel title="Jarvis briefing" eyebrow="PERSONAL ASSISTANT"><div className="jarvis-brief"><SparklesIcon/><p><b>Ready when you are.</b><span>Ask me to open a page, add a goal, create a habit, schedule a reminder, or decide what to do next.</span></p></div><button className="text-action jarvis-hint">Use the floating orb to talk →</button></Panel>
       </div>
-      <div className="split">
-        <Panel title="Skill radar" eyebrow="TOPIC COVERAGE">
-          <div className="bars">
-            {skills.map((s) => (
-              <div key={s.name}>
-                <span>{s.name}</span>
-                <i>
-                  <b style={{ width: `${s.value}%` }} />
-                </i>
-                <small>{s.value}%</small>
-              </div>
-            ))}
-          </div>
-        </Panel>
-        <Panel title="Goal momentum" eyebrow="THIS WEEK">
-          {goals.map((g) => (
-            <div className="mini-goal" key={g.id}>
-              <div className="row">
-                <span>{g.title}</span>
-                <b>{Math.round((g.done / g.target) * 100)}%</b>
-              </div>
-              <div className="progress">
-                <i
-                  style={{
-                    width: `${Math.min(100, (g.done / g.target) * 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </Panel>
-      </div>
-      <Panel title="Recent accepted submissions" eyebrow="LIVE ACTIVITY">
-        {problems.slice(0, 5).map((p) => (
-          <div className="activity" key={p.id}>
-            <span className="dot" />
-            <div>
-              {p.url ? (
-                <a href={p.url} target="_blank">
-                  <b>{p.title}</b>
-                </a>
-              ) : (
-                <b>{p.title}</b>
-              )}
-              <small>
-                {p.platform} · {p.topic} · {p.date}
-              </small>
-            </div>
-            <span className={`pill ${p.difficulty.toLowerCase()}`}>
-              {p.difficulty}
-            </span>
-          </div>
-        ))}
-      </Panel>
     </section>
   );
 }
-function Metric({
-  label,
-  value,
-  note,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  note: string;
-  icon: React.ComponentType<{ size?: number }>;
-}) {
-  return (
-    <article className="metric">
-      <Icon size={19} />
-      <p>{label}</p>
-      <b>{value}</b>
-      <small>{note}</small>
-    </article>
-  );
-}
+function SparklesIcon(){ return <span className="jarvis-core-mark">J</span>; }
+function HabitCalendar({ habit, onToggle, onDelete }: { habit: Habit; onToggle: (id: number, day?: string) => void; onDelete: () => void }) { const days = Array.from({length: 28}, (_, index) => { const date = new Date(); date.setDate(date.getDate() - (27 - index)); return date; }); return <article className={`habit-calendar-row ${habit.kind}`}><div className="habit-calendar-head"><div><span>{habit.kind === "build" ? "BUILD" : "BREAK"}</span><h3>{habit.title}</h3></div><div><b>{habit.history.length}</b><small>check-ins</small><button className="icon" onClick={onDelete} aria-label={`Delete ${habit.title}`}><Trash2 size={14}/></button></div></div><div className="calendar-strip">{days.map((day) => { const key = dateKey(day); const checked = habit.history.includes(key); return <button key={key} className={checked ? "calendar-day checked" : "calendar-day"} onClick={() => onToggle(habit.id, key)} title={`${day.toLocaleDateString()} · ${checked ? "checked" : "not checked"}`}><small>{day.toLocaleDateString(undefined,{weekday:"narrow"})}</small><b>{day.getDate()}</b></button>; })}</div></article>; }
 function WallOfPortfolios({ stats }: { stats: Stats }) {
   return (
     <div className="wop-container">

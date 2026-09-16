@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Codefolio | Your developer workspace",
   description: "Track coding progress, projects, portfolio, and resume in one developer workspace.",
+  manifest: "/manifest.webmanifest",
   other: {
     "codex-preview": "development",
   },

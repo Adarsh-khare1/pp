@@ -18,7 +18,7 @@ export default function PortfolioApp() {
     const timer = window.setTimeout(() => setConfig(readPortfolioConfig()), 0);
     const onUpdate = (event: Event) => setConfig((event as CustomEvent<PortfolioConfig>).detail);
     window.addEventListener("portfolio-config-updated", onUpdate);
-    fetch("/api/profile", { cache: "no-store" }).then((response) => response.ok ? response.json() : Promise.reject()).then((profile: ProfileData) => setData(profile)).catch(() => setData({ stats: { github: { followers: 0, repos: 0 }, codeforces: { rating: 0, rank: "" } } }));
+    fetch("/api/profile", { cache: "no-store" }).then(async (response) => response.ok ? await response.json() as ProfileData : Promise.reject()).then((profile) => setData(profile)).catch(() => setData({ stats: { github: { followers: 0, repos: 0 }, codeforces: { rating: 0, rank: "" } } }));
     return () => { window.clearTimeout(timer); window.removeEventListener("portfolio-config-updated", onUpdate); };
   }, []);
 
